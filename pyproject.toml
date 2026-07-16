@@ -1,5 +1,5 @@
 [project]
-name = "photon-testing-grounds"
+name = "spt-flux-probing"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -16,8 +16,12 @@ dependencies = [
     "plotly>=6.8.0",
     "scikit-learn>=1.9.0",
     "scipy>=1.17.1",
+    "spadlib",
     "sparse>=0.18.0",
     "tifffile>=2026.3.3",
     "tqdm>=4.67.3",
     "zarr>=3.1.6",
 ]
+
+[tool.uv.sources]
+spadlib = { git = "https://github.com/jerukan/spadlib.git" }

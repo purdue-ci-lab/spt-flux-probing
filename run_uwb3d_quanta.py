@@ -6,7 +6,8 @@ import dask.array as da
 import numpy as np
 import zarr
 
-from uwb3d import ihpp_fft, ihpp_data, utils, quanta_data
+from uwb3d import ihpp_fft, utils, quanta_data
+from spadlib import io as spio, processing as spproc, video_io as spvid
 from uwb3d.logger import get_logger
 from uwb3d.config import DATA_DIR, OUTPUT_DIR
 
@@ -193,7 +194,7 @@ window_kwargs = None
 for dataname in all_datanames:
     # leave without extension to search for the format-agnostic reader in ihpp_data.read_quanta_auto
     quantapath = data_dir / f"{dataname}"
-    quantaframes_base, metadata = ihpp_data.read_quanta_auto(
+    quantaframes_base, metadata = spio.read_quanta_auto(
         quantapath, load_data=True, H=src_H, W=src_W
     )  # shape: (T, H, W)
     if metadata is not None:
@@ -263,16 +264,16 @@ for dataname in all_datanames:
         output_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Output directory: {output_dir}")
         if keep_prob < 1.0:
-            dcr_prob = ihpp_data.prob_from_dcr(25.0, fps_vid)
+            dcr_prob = spproc.prob_from_dcr(25.0, fps_vid)
             t0_thin = time.time()
-            quantaframes = ihpp_data.thin_frames_uniform_da(quantaframes_base, keep_prob, dcr_prob=dcr_prob, seed=42)
+            quantaframes = spproc.thin_frames_uniform_dask(quantaframes_base, keep_prob, dcr_prob=dcr_prob, seed=42)
             t1_thin = time.time()
             logger.info(f"Thinning frames took {t1_thin - t0_thin:.2f} seconds")
             nevents_thinned = np.count_nonzero(quantaframes)
             logger.info(f"Thinned events from {nevents_orig} to {nevents_thinned} using keep_prob={keep_prob}")
 
             logger.info(f"Saving thinned frames for sanity to {output_dir / 'thinned_frames.zarr'}")
-            ihpp_data.write_quantaframes_zarr(
+            spio.write_frames_zarr(
                 output_dir / "thinned_frames.zarr",
                 quantaframes, fps=fps_vid
             )
@@ -357,7 +358,7 @@ for dataname in all_datanames:
         # utils.save_sparse_to_zarr(
         #     F, output_dir / f"fourier.zarr"
         # )
-        utils.save_arrs_to_zarr(
+        spio.save_arrs_to_zarr(
             reconinfo,
             output_dir / f"reconinfo.zarr",
             chunks={
@@ -367,13 +368,13 @@ for dataname in all_datanames:
             n_workers=48,
             overwrite=True,
         )
-        ihpp_data.to_video(
+        spvid.write_video(
             flux,
             output_dir / f"gamma.mp4",
             gamma=1/2.2,
             playback_fps=30, cmap="grey", vmin=0, vmax=maxflux
         )
-        ihpp_data.to_video(
+        spvid.write_video(
             flux,
             output_dir / f"gamma-viridis.mp4",
             gamma=1/2.2,

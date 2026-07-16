@@ -1,7 +1,10 @@
 import argparse
 import yaml
 from uwb3d import motion_detection
-from uwb3d.ihpp_data import read_quanta_zarr, to_video, read_spadbin, binframes_to_spt , thin_events_uniform, events_to_binframes
+from uwb3d.ihpp_data import read_spadbin
+from spadlib.io import read_quanta_zarr, frames_to_events, events_to_frames
+from spadlib.processing import thin_events_uniform
+from spadlib.video_io import write_video
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import numpy as np
@@ -272,7 +275,7 @@ def main():
     
     if thinning_factor > 1:
         log.info("Thinning binary frames by factor %d", thinning_factor)
-        events = binframes_to_spt(analyzed_spadbinframes,effective_t_exp)
+        events = frames_to_events(analyzed_spadbinframes,effective_t_exp)
         events = np.array(events)
         events = np.transpose(events)
         log.info(f"Original events shape: {events.shape}")
@@ -280,7 +283,7 @@ def main():
         log.info(f"Thinned events shape: {events_thinned.shape}")
         t,y,x = events_thinned[:,0], events_thinned[:,1], events_thinned[:,2]
         log.info(f"t.shape={t.shape} y.shape={y.shape} x.shape={x.shape}")
-        analyzed_spadbinframes = events_to_binframes(x,y,t,analyzed_spadbinframes.shape[0], analyzed_spadbinframes.shape[1], analyzed_spadbinframes.shape[2])
+        analyzed_spadbinframes = events_to_frames(x,y,t,analyzed_spadbinframes.shape[0], analyzed_spadbinframes.shape[1], analyzed_spadbinframes.shape[2])
         log.info("Converted back to binframes shape: %s", analyzed_spadbinframes.shape)
     else:
         log.info(f"No thinning applied (thin={thinning_factor})")
@@ -289,7 +292,7 @@ def main():
 
     if not os.path.exists(output_bin_video_path):
         log.info("Saving binary patch video -> %s", output_bin_video_path)
-        to_video(analyzed_spadbinframes, output_bin_video_path, 1, 30, "gray", "mp4")
+        write_video(analyzed_spadbinframes, output_bin_video_path, 1, 30, "gray", "mp4")
     else:
         log.info("Video already exists: %s", output_bin_video_path)
 

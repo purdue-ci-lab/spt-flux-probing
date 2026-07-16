@@ -5,7 +5,8 @@ import cv2
 import dask.array as da
 import numpy as np
 
-from uwb3d import ihpp_fft, ihpp_data, utils, get_logger
+from uwb3d import ihpp_fft, get_logger
+from spadlib import io as spio, processing as spproc, video_io as spvid
 
 logger = get_logger(__name__)
 
@@ -97,7 +98,7 @@ window = "hann"
 # iterate datasets and keep-probs similar to previous cell
 for dataname in all_datanames:
     quantapath = data_dir / f"{dataname}.zarr"
-    quantaframes_base, _, _ = ihpp_data.read_quanta_zarr(quantapath, load_data=False)  # shape: (T_bins, H_bins, W_bins)
+    quantaframes_base, _, _ = spio.read_quanta_zarr(quantapath, load_data=False)  # shape: (T_bins, H_bins, W_bins)
     quantaframes_base = np.asarray(quantaframes_base[:, ::8, ::8], dtype="uint8")
     # quantaframes_base = utils.resize_video(quantaframes_base, X_res, Y_res, interpolation=cv2.INTER_NEAREST)
     nframes = quantaframes_base.shape[0]
@@ -121,7 +122,7 @@ for dataname in all_datanames:
         output_dir = output_parent_dir / dataname / f"thin{keep_prob:.3f}" / f"fps{playfps}" / recon_str_format
         output_dir.mkdir(parents=True, exist_ok=True)
         if keep_prob < 1.0:
-            quantaframes = ihpp_data.thin_frames_uniform(quantaframes_base, keep_prob, seed=42)
+            quantaframes = spproc.thin_frames_uniform(quantaframes_base, keep_prob, seed=42)
             nevents_thinned = np.count_nonzero(quantaframes)
             logger.info(f"Thinned events from {nevents_orig} to {nevents_thinned} using keep_prob={keep_prob}")
         else:
@@ -174,7 +175,7 @@ for dataname in all_datanames:
         #     output_dir / f"fluxframes",
         #     cmap="grey", format="png", maxv=maxflux
         # )
-        ihpp_data.to_video(
+        spvid.write_video(
             gamma,
             output_dir / f"gamma.avi",
             playback_fps=30, cmap="grey", vmax=maxgamma

@@ -6,7 +6,8 @@ import dask.array as da
 import numpy as np
 import zarr
 
-from uwb3d import ihpp_fft, ihpp_data, utils, quanta_data
+from uwb3d import ihpp_fft, utils, quanta_data
+from spadlib import io as spio, processing as spproc, video_io as spvid
 from uwb3d.logger import get_logger
 from uwb3d.config import DATA_DIR, OUTPUT_DIR
 
@@ -63,7 +64,7 @@ fps = 128_000
 for dataname in all_datanames:
     # leave without extension to search for the format-agnostic reader in ihpp_data.read_quanta_auto
     quantapath = data_dir / f"{dataname}"
-    quantaframes_base, metadata = ihpp_data.read_quanta_auto(quantapath)  # shape: (T, H, W)
+    quantaframes_base, metadata = spio.read_quanta_auto(quantapath)  # shape: (T, H, W)
     if frame_slice is not None:
         quantaframes_base = quantaframes_base[frame_slice]
     nframes = quantaframes_base.shape[0]
@@ -108,8 +109,8 @@ for dataname in all_datanames:
         output_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Output directory: {output_dir}")
         if keep_prob < 1.0:
-            dcr_prob = ihpp_data.prob_from_dcr(25.0, fps_vid)
-            quantaframes = ihpp_data.thin_frames_uniform(quantaframes_base, keep_prob, dcr_prob=dcr_prob, seed=42)
+            dcr_prob = spproc.prob_from_dcr(25.0, fps_vid)
+            quantaframes = spproc.thin_frames_uniform(quantaframes_base, keep_prob, dcr_prob=dcr_prob, seed=42)
             nevents_thinned = np.count_nonzero(quantaframes)
             logger.info(f"Thinned events from {nevents_orig} to {nevents_thinned} using keep_prob={keep_prob}")
         else:
@@ -157,7 +158,7 @@ for dataname in all_datanames:
         maxflux = np.max(flux)
 
         # save results
-        utils.save_arrs_to_zarr(
+        spio.save_arrs_to_zarr(
             reconinfo,
             output_dir / f"reconinfo.zarr",
             chunks={
@@ -167,7 +168,7 @@ for dataname in all_datanames:
             n_workers=48,
             overwrite=True,
         )
-        ihpp_data.to_video(
+        spvid.write_video(
             flux,
             output_dir / f"gamma.mp4",
             gamma=1/2.2,

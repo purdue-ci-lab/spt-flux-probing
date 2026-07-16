@@ -10,7 +10,8 @@ import numpy as np
 from scipy.stats import norm, normaltest
 from tqdm import tqdm
 
-from uwb3d import ihpp_sim, logger
+from uwb3d import logger
+from spadlib.sim import simulate_ihpp3d
 import plotly.io as pio
 
 pio.renderers.default = "browser"          # opens in your default browser tab
@@ -178,7 +179,7 @@ else:
         )
 
         for trial in tqdm(range(N_TRIALS)):
-            points = ihpp_sim.simulate_ihpp3d(
+            points = simulate_ihpp3d(
                 lambda_fn=lam,
                 s_region=[[0, 0], [1, 0], [1, 1], [0, 1]],
                 t_range=(0, 1),

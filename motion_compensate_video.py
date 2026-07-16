@@ -10,13 +10,9 @@ import torch
 from tqdm.auto import tqdm
 
 from uwb3d import motion_detection
-from uwb3d.ihpp_data import (
-    read_quanta_zarr,
-    read_spadbin,
-    binframes_to_spt,
-    thin_events_uniform,
-    events_to_binframes,
-)
+from uwb3d.ihpp_data import read_spadbin
+from spadlib.io import read_quanta_zarr, frames_to_events, events_to_frames
+from spadlib.processing import thin_events_uniform
 
 
 # -------------------------
@@ -140,7 +136,7 @@ def apply_thinning(binframes: np.ndarray, T_exp: float, thin: int, log: logging.
     t0 = time.perf_counter()
     log.info("Thinning: thin=%d (keep 1/%d events)", thin, thin)
 
-    events = np.asarray(binframes_to_spt(binframes, T_exp))
+    events = np.asarray(frames_to_events(binframes, T_exp))
     if events.ndim == 2 and events.shape[0] == 3:
         events = events.T  # (N,3)
 
@@ -149,7 +145,7 @@ def apply_thinning(binframes: np.ndarray, T_exp: float, thin: int, log: logging.
     log.info("Events after thinning:  %s", events_th.shape)
 
     t, y, x = events_th[:, 0], events_th[:, 1], events_th[:, 2]
-    out = events_to_binframes(x, y, t, binframes.shape[0], binframes.shape[1], binframes.shape[2])
+    out = events_to_frames(x, y, t, binframes.shape[0], binframes.shape[1], binframes.shape[2])
 
     log.info("Thinning done -> binframes %s in %.2fs", out.shape, time.perf_counter() - t0)
     return out

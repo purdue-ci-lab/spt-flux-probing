@@ -3,7 +3,10 @@ import time
 
 import numpy as np
 
-from uwb3d import ihpp_fft, ihpp_data, datastructs, utils, logger, config
+from uwb3d import ihpp_fft, datastructs, logger, config
+from spadlib.io import save_arrs_to_zarr
+from spadlib.utils import format_number_unit
+from spadlib.video_io import write_video
 
 logger = logger.get_logger(__name__)
 
@@ -62,7 +65,7 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
     logger.info(f"Reconstructing UWB-Fan data at fps={fps} Hz, nframes={nframes}, tstart={tstart}s, eps={eps}")
     Nt = nframes
     datastr = "-".join([
-        f"fps{utils.format_number_unit(fps)}",
+        f"fps{format_number_unit(fps)}",
         f"bins{Nt}x{Ny}x{Nx}",
     ])
     output_dir = output_parent / datastr
@@ -84,7 +87,7 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
     flux_r = np.clip(out.real, 0, None)
     flux_r3ch = np.zeros((Nt, Ny, Nx, 3), dtype=np.float64)
     flux_r3ch[:, :, :, 0] = flux_r
-    ihpp_data.to_video(flux_r3ch, output_dir / "gamma-r.avi", gamma=1/2.2, **vid_settings)
+    write_video(flux_r3ch, output_dir / "gamma-r.avi", gamma=1/2.2, **vid_settings)
     del flux_r3ch
 
     # green
@@ -98,7 +101,7 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
     flux_g = np.clip(out.real, 0, None)
     flux_g3ch = np.zeros((Nt, Ny, Nx, 3), dtype=np.float64)
     flux_g3ch[:, :, :, 1] = flux_g
-    ihpp_data.to_video(flux_g3ch, output_dir / "gamma-g.avi", gamma=1/2.2, **vid_settings)
+    write_video(flux_g3ch, output_dir / "gamma-g.avi", gamma=1/2.2, **vid_settings)
     del flux_g3ch
 
     # blue
@@ -112,7 +115,7 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
     flux_b = np.clip(out.real, 0, None)
     flux_b3ch = np.zeros((Nt, Ny, Nx, 3), dtype=np.float64)
     flux_b3ch[:, :, :, 2] = flux_b
-    ihpp_data.to_video(flux_b3ch, output_dir / "gamma-b.avi", gamma=1/2.2, **vid_settings)
+    write_video(flux_b3ch, output_dir / "gamma-b.avi", gamma=1/2.2, **vid_settings)
     del flux_b3ch
 
     # combined RGB
@@ -121,7 +124,7 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
     flux_rgb[:, :, :, 0] = flux_r * 1.0
     flux_rgb[:, :, :, 1] = flux_g * 0.75
     flux_rgb[:, :, :, 2] = flux_b * 0.4
-    ihpp_data.to_video(flux_rgb, output_dir / "gamma-rgb.avi", gamma=1/2.2, **vid_settings)
+    write_video(flux_rgb, output_dir / "gamma-rgb.avi", gamma=1/2.2, **vid_settings)
     del flux_rgb
 
     reconinfo = {
@@ -129,7 +132,7 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
         "flux_g": np.asarray(flux_g, dtype="float32"),
         "flux_b": np.asarray(flux_b, dtype="float32"),
     }
-    utils.save_arrs_to_zarr(
+    save_arrs_to_zarr(
         reconinfo,
         output_dir / f"reconinfo.zarr",
         chunks={

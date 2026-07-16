@@ -4,7 +4,9 @@ import time
 import cv2
 import numpy as np
 
-from uwb3d import ihpp_fft, ihpp_data, datastructs, logger, config
+from uwb3d import ihpp_fft, datastructs, logger, config
+from spadlib.io import read_async_spad_zarr
+from spadlib.processing import thin_events_uniform
 
 logger = logger.get_logger(__name__)
 
@@ -58,15 +60,15 @@ V = src_W * src_H * T_exp
 # points_b, _ = ihpp_data.read_spadfolder(data_folder / "B", h=src_H, w=src_W, T_exp=T_exp, normalize=True)
 # t_b, y_b, x_b = points_b[:, 0], points_b[:, 1], points_b[:, 2]
 
-(t_r, y_r, x_r), pix_ts_r, _ = ihpp_data.read_asyncspad_zarr(data_folder / "R.zarr", load_data=True)
-(t_g, y_g, x_g), pix_ts_g, _ = ihpp_data.read_asyncspad_zarr(data_folder / "G.zarr", load_data=True)
-(t_b, y_b, x_b), pix_ts_b, _ = ihpp_data.read_asyncspad_zarr(data_folder / "B.zarr", load_data=True)
+(t_r, y_r, x_r), pix_ts_r, _ = read_async_spad_zarr(data_folder / "R.zarr", load_data=True)
+(t_g, y_g, x_g), pix_ts_g, _ = read_async_spad_zarr(data_folder / "G.zarr", load_data=True)
+(t_b, y_b, x_b), pix_ts_b, _ = read_async_spad_zarr(data_folder / "B.zarr", load_data=True)
 
 if keep_prob < 1.0:
     print(f"original red count: {t_r.size}")
-    thin_r_idxs = ihpp_data.thin_events_uniform(t_r, keep_prob=keep_prob, return_idx=True, seed=42)
-    thin_g_idxs = ihpp_data.thin_events_uniform(t_g, keep_prob=keep_prob, return_idx=True, seed=42)
-    thin_b_idxs = ihpp_data.thin_events_uniform(t_b, keep_prob=keep_prob, return_idx=True, seed=42)
+    thin_r_idxs = thin_events_uniform(t_r, keep_prob=keep_prob, return_idx=True, seed=42)
+    thin_g_idxs = thin_events_uniform(t_g, keep_prob=keep_prob, return_idx=True, seed=42)
+    thin_b_idxs = thin_events_uniform(t_b, keep_prob=keep_prob, return_idx=True, seed=42)
     t_r, y_r, x_r = t_r[thin_r_idxs], y_r[thin_r_idxs], x_r[thin_r_idxs]
     print(f"thinned red count: {t_r.size}")
     t_g, y_g, x_g = t_g[thin_g_idxs], y_g[thin_g_idxs], x_g[thin_g_idxs]

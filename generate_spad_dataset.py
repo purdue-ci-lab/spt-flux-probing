@@ -24,7 +24,8 @@ from typing import List, Tuple, Optional, Callable
 from functools import wraps
 import zarr
 
-from uwb3d import ihpp_data, utils
+from spadlib.io import write_frames_zarr
+from spadlib.video_io import read_image_dir
 from uwb3d.config import DATA_DIR
 
 DEFAULT_BASE_DIR = DATA_DIR / "phantom-synth"
@@ -717,7 +718,7 @@ def process_video(video_idx: int,
     # Step 1: Load frames (CPU)
     print("\nStep 1: Loading frames...")
     # frames = load_video_frames(video_dir)  # [T, H, W, 3]
-    frames = utils.read_imgdir(video_dir, grayscale=False)  # [T, H, W, 3]
+    frames = read_image_dir(video_dir, grayscale=False)  # [T, H, W, 3]
     T, H, W = frames.shape[0], frames.shape[1], frames.shape[2]
     print(f"  Loaded {len(frames)} frames of size {W}x{H}")
 
@@ -793,7 +794,7 @@ def process_video(video_idx: int,
 
     binary_ppp01_cpu = binary_from_grayscale(grayscale_torch, target_ppp=0.1, device=rife_device)
     zarr_ppp01_path = output_dir / f"{video_dir.stem}_rife{rife_interp_exp}_linear{linear_interp}_ppp0.1.zarr"
-    ihpp_data.write_quantaframes_zarr(zarr_ppp01_path, binary_ppp01_cpu, fps=out_fps, save_coords=False)
+    write_frames_zarr(zarr_ppp01_path, binary_ppp01_cpu, fps=out_fps, save_coords=False)
     print(f"  Saved binary (PPP=0.1) to {zarr_ppp01_path}")
     del binary_ppp01_cpu
 
