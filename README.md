@@ -4,10 +4,11 @@
 
 ## Setup
 
-Set up the Conda environment as the following:
+We use [uv](https://docs.astral.sh/uv/) as a package manager to set up the environment.
 
 ```shell
-conda env create --file environment.yml
+uv sync
+source .venv/bin/activate
 ```
 
 To set up CuPy for CUDA acceleration on processing quanta data, check your Nvidia version:
