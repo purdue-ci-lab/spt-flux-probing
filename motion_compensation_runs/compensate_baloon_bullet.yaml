@@ -1,0 +1,25 @@
+experiment_name: bullet_baloon
+
+data:
+  path: ./data/bullet_baloon/
+  T_exp: 1.0
+  type: zarr
+  frames: 37000
+  width: 512
+  height: 512
+  slice: [2200, 3800]
+  velocity_bounds: [-0.3, 0, 100]
+
+window_settings:
+    patch_num: 0
+    window_size: 512
+    window_stride: 32
+    temporal_size: 250
+
+output:
+  base_path: ./output/bullet_baloon/
+  sub_folder: "slice_{slice_start}_{slice_end}_width_{width}_height_{height}_velocity_bounds_{vmin}_{vmax}_N{n_vel}_window_size_{window_size}_window_stride_{window_stride}_temporal_size_{temporal_size}_patch_num_{patch_num}"
+  bin_video_path: "bullet_baloon.mp4"
+  two_dimensional_energies_path: "bullet_baloon_2d_energies.svg"
+  two_dimensional_detections_path: "bullet_baloon_2d_detections.svg"
+  two_dimensional_motion_compensated_path: "bullet_baloon_2d_motion_compensated.svg"

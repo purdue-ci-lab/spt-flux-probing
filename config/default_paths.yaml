@@ -1,0 +1,4 @@
+# copy this file to config/paths.yaml and edit the paths as needed
+DATA_DIR: data/
+OUTPUT_DIR: output/
+LOG_DIR: logs/
