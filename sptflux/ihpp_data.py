@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from spadlib.processing import correct_hotpixels_conv, thin_frames_uniform
 
-from uwb3d.logger import get_logger
+from sptflux.logger import get_logger
 
 
 logger = get_logger(__name__)

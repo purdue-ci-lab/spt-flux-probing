@@ -1,7 +1,7 @@
 import argparse
 import yaml
-from uwb3d import motion_detection
-from uwb3d.ihpp_data import read_spadbin
+from sptflux import motion_detection
+from sptflux.ihpp_data import read_spadbin
 from spadlib.io import read_quanta_zarr, frames_to_events, events_to_frames
 from spadlib.processing import thin_events_uniform
 from spadlib.video_io import write_video

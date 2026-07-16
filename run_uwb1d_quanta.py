@@ -6,10 +6,10 @@ import dask.array as da
 import numpy as np
 import zarr
 
-from uwb3d import ihpp_fft, utils, quanta_data
+from sptflux import ihpp_fft, utils, quanta_data
 from spadlib import io as spio, processing as spproc, video_io as spvid
-from uwb3d.logger import get_logger
-from uwb3d.config import DATA_DIR, OUTPUT_DIR
+from sptflux.logger import get_logger
+from sptflux.config import DATA_DIR, OUTPUT_DIR
 
 logger = get_logger(__name__)
 

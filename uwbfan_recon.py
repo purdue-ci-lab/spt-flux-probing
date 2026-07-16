@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 
-from uwb3d import ihpp_fft, datastructs, logger, config
+from sptflux import ihpp_fft, datastructs, logger, config
 from spadlib.io import save_arrs_to_zarr
 from spadlib.utils import format_number_unit
 from spadlib.video_io import write_video

@@ -4,7 +4,7 @@ import time
 import cv2
 import numpy as np
 
-from uwb3d import ihpp_fft, datastructs, logger, config
+from sptflux import ihpp_fft, datastructs, logger, config
 from spadlib.io import read_async_spad_zarr
 from spadlib.processing import thin_events_uniform
 

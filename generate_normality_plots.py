@@ -10,7 +10,7 @@ import numpy as np
 from scipy.stats import norm, normaltest
 from tqdm import tqdm
 
-from uwb3d import logger
+from sptflux import logger
 from spadlib.sim import simulate_ihpp3d
 import plotly.io as pio
 

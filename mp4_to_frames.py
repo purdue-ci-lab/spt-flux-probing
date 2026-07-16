@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 from tqdm import tqdm
 
-from uwb3d import config
+from sptflux import config
 
 input_video_path = config.DATA_DIR / Path("phantom-synth/separated_videos/stirfry-fps1000.mp4")
 output_folder = config.DATA_DIR / Path("phantom-synth/separated_videos") / input_video_path.stem

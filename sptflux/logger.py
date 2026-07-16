@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 import warnings
 
-from uwb3d.config import LOG_DIR
+from sptflux.config import LOG_DIR
 
 log_dir = Path(LOG_DIR)
 if not log_dir.is_dir():

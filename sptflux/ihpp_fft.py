@@ -23,8 +23,8 @@ from scipy.stats import chi, chi2
 import sparse
 from tqdm import tqdm
 
-from uwb3d import datastructs, ihpp_data, utils
-from uwb3d.logger import get_logger
+from sptflux import datastructs, ihpp_data, utils
+from sptflux.logger import get_logger
 
 
 logger = get_logger(__name__)

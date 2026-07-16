@@ -26,7 +26,7 @@ import zarr
 
 from spadlib.io import write_frames_zarr
 from spadlib.video_io import read_image_dir
-from uwb3d.config import DATA_DIR
+from sptflux.config import DATA_DIR
 
 DEFAULT_BASE_DIR = DATA_DIR / "phantom-synth"
 MIN_CHUNK_SIZE = 50  # Minimum chunk size for GPU processing

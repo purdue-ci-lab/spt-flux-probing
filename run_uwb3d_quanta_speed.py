@@ -5,7 +5,7 @@ import cv2
 import dask.array as da
 import numpy as np
 
-from uwb3d import ihpp_fft, get_logger
+from sptflux import ihpp_fft, get_logger
 from spadlib import io as spio, processing as spproc, video_io as spvid
 
 logger = get_logger(__name__)
