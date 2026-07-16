@@ -17,28 +17,24 @@ def fig_spt_points(points, r=0.1, max_pts=5000) -> go.Figure:
     Returns:
         fig (go.Figure): 3D scatter plot with points colored by local density.
     """
-    import visu3d as v3d
     if len(points) > max_pts:
         # reduce number of points for visualization
         idx = np.random.choice(len(points), size=max_pts, replace=False)
         points = points[idx]
     tree = KDTree(points[:, :3])
     neighbor_counts = tree.query_radius(points[:, :3], r=r, count_only=True)
-    # Normalize neighbor_counts for colormap
-    counts_norm = (neighbor_counts - neighbor_counts.min()) / (neighbor_counts.max() - neighbor_counts.min())
-    cmap = plt.get_cmap("viridis")
-    rgb = cmap(counts_norm)[:, :3]
-    # # Normalize t to [0, 1] for colormap
-    # t_norm = (t - t.min()) / (t.max() - t.min())
-    # rgb = cm.viridis(t_norm)[:, :3]  # shape (N, 3), drop alpha
-    trace = v3d.Point3d(p=points, rgb=rgb * 255).make_traces()[0]
-    trace.update({"marker": {
-        "showscale": True,
-        "color": neighbor_counts,
-        "colorscale": "Viridis",
-        "colorbar": {"title": "Neighbor count within r=%.2f" % r, "len": 0.5, "y": 0.4},
-    }})
-    fig = v3d.make_fig([trace])
+    trace = go.Scatter3d(
+        x=points[:, 0], y=points[:, 1], z=points[:, 2],
+        mode="markers",
+        marker={
+            "size": 2,
+            "showscale": True,
+            "color": neighbor_counts,
+            "colorscale": "Viridis",
+            "colorbar": {"title": "Neighbor count within r=%.2f" % r, "len": 0.5, "y": 0.4},
+        },
+    )
+    fig = go.Figure(data=[trace])
     fig.update_layout(title="Spatio-temporal events", scene=dict(xaxis_title="x", yaxis_title="y", zaxis_title="t"))
     return fig
 
@@ -56,7 +52,6 @@ def fig_powerspec(fx, fy, ft, F, step=1, maxpts=10000, threshold=None, func=None
         fig (go.Figure): 3D scatter plot of |F| on the (fx, fy, ft) grid, where color
             and size represent the magnitude.
     """
-    import visu3d as v3d
     if func is None:
         func = np.abs
     # Subsample every step elements along each axis
@@ -99,18 +94,19 @@ def fig_powerspec(fx, fy, ft, F, step=1, maxpts=10000, threshold=None, func=None
     colors[:, 3] = F_norm.reshape(-1)
     colors = (colors[:, :4] * 255).astype(np.uint8)
 
-    trace = v3d.Point3d(
-        p=np.array([xgrid.reshape(-1), ygrid.reshape(-1), tgrid.reshape(-1)]).T,
-        rgb=colors[:, :3]
-    ).make_traces()[0]
-    fig = v3d.make_fig(trace.update(
+    rgb_strings = [f"rgb({r},{g},{b})" for r, g, b in colors[:, :3]]
+    trace = go.Scatter3d(
+        x=xgrid.reshape(-1), y=ygrid.reshape(-1), z=tgrid.reshape(-1),
+        mode="markers",
         marker=dict(
+            color=rgb_strings,
             size=40.0 * F_norm.reshape(-1),
             line=dict(
                 width=0
             )
         )
-    ))
+    )
+    fig = go.Figure(data=[trace])
     fig.update_layout(scene=dict(xaxis_title="freq x", yaxis_title="freq y", zaxis_title="freq t"))
     return fig
 

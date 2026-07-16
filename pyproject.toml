@@ -19,9 +19,5 @@ dependencies = [
     "sparse>=0.18.0",
     "tifffile>=2026.3.3",
     "tqdm>=4.67.3",
-    "visu3d",
     "zarr>=3.1.6",
 ]
-
-[tool.uv.sources]
-visu3d = { git = "https://github.com/google-research/visu3d.git" }
