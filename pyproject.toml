@@ -10,18 +10,20 @@ dependencies = [
     "finufft>=2.5.1",
     "jupyter>=1.1.1",
     "matplotlib>=3.10.9",
-    "numpy>=2.4.6",
+    # numba (via sparse) requires numpy<2.5; without this cap uv's universal
+    # resolution picks numpy 2.5 for py>=3.12 and backtracks numba to 0.53.1
+    "numpy>=2.4.6,<2.5",
     "opencv-python>=4.13.0.92",
     "pandas>=3.0.3",
     "plotly>=6.8.0",
     "scikit-learn>=1.9.0",
     "scipy>=1.17.1",
     "spadlib",
-    "sparse>=0.18.0",
+    "sparse>=0.19.0",
     "tifffile>=2026.3.3",
     "tqdm>=4.67.3",
     "zarr>=3.1.6",
 ]
 
 [tool.uv.sources]
-spadlib = { git = "https://github.com/jerukan/spadlib.git" }
+spadlib = { git = "https://github.com/purdue-ci-lab/spadlib.git" }
