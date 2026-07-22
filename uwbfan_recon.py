@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 
-from sptflux import ihpp_fft, datastructs, logger, config
+from sptflux import flux_probing, datastructs, logger, config
 from spadlib.io import save_arrs_to_zarr
 from spadlib.utils import format_number_unit
 from spadlib.video_io import write_video
@@ -78,8 +78,8 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
 
     # red
     mask = ft_r <= nyquist
-    F_r = ihpp_fft.double_real_spectrum_3d(F_r, ft_r, nyquist=nyquist)
-    out = ihpp_fft.spt_ihpp_inufft3_chunked(
+    F_r = flux_probing.double_real_spectrum_3d(F_r, ft_r, nyquist=nyquist)
+    out = flux_probing.spt_ihpp_inufft3_chunked(
         fx_r[mask], fy_r[mask], ft_r[mask], F_r[mask],
         coordgrid,
         chunk_size=chunk_size, ft_range_max=ft_range_max, cuda=cuda, eps=eps
@@ -92,8 +92,8 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
 
     # green
     mask = ft_g <= nyquist
-    F_g = ihpp_fft.double_real_spectrum_3d(F_g, ft_g, nyquist=nyquist)
-    out = ihpp_fft.spt_ihpp_inufft3_chunked(
+    F_g = flux_probing.double_real_spectrum_3d(F_g, ft_g, nyquist=nyquist)
+    out = flux_probing.spt_ihpp_inufft3_chunked(
         fx_g[mask], fy_g[mask], ft_g[mask], F_g[mask],
         coordgrid,
         chunk_size=chunk_size, ft_range_max=ft_range_max, cuda=cuda, eps=eps
@@ -106,8 +106,8 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
 
     # blue
     mask = ft_b <= nyquist
-    F_b = ihpp_fft.double_real_spectrum_3d(F_b, ft_b, nyquist=nyquist)
-    out = ihpp_fft.spt_ihpp_inufft3_chunked(
+    F_b = flux_probing.double_real_spectrum_3d(F_b, ft_b, nyquist=nyquist)
+    out = flux_probing.spt_ihpp_inufft3_chunked(
         fx_b[mask], fy_b[mask], ft_b[mask], F_b[mask],
         coordgrid,
         chunk_size=chunk_size, ft_range_max=ft_range_max, cuda=cuda, eps=eps

@@ -6,7 +6,7 @@ import dask.array as da
 import numpy as np
 import zarr
 
-from sptflux import ihpp_fft, utils, quanta_data
+from sptflux import flux_probing, utils, quanta_data
 from spadlib import io as spio, processing as spproc, video_io as spvid
 from sptflux.logger import get_logger
 from sptflux.config import DATA_DIR, OUTPUT_DIR
@@ -282,7 +282,7 @@ for dataname in all_datanames:
             quantaframes = quantaframes_base
 
         t0 = time.time()
-        flux = ihpp_fft.uwb3d_patch_quanta(
+        flux = flux_probing.uwb3d_stft_quanta(
             quantaframes,
             patch_sizes=(chunk_t, chunk_h, chunk_w),
             hop_sizes=(hop_t, hop_h, hop_w),
@@ -293,7 +293,7 @@ for dataname in all_datanames:
             save_fourier_coeffs=False, all_fourier_coeffs=False,
             cuda=use_cuda, load_frames_on_vram=load_frames_on_vram, load_output_on_vram=load_output_on_vram
         )
-        # flux = ihpp_fft.uwb3d_patch_quanta_speed(
+        # flux = flux_probing.uwb3d_patch_quanta_speed(
         #     quantaframes,
         #     patch_sizes=(chunk_t, chunk_h, chunk_w),
         #     hop_sizes=(hop_t, hop_h, hop_w),

@@ -6,7 +6,7 @@ import dask.array as da
 import numpy as np
 import zarr
 
-from sptflux import ihpp_fft, utils, quanta_data
+from sptflux import flux_probing, utils, quanta_data
 from spadlib import io as spio, processing as spproc, video_io as spvid
 from sptflux.logger import get_logger
 from sptflux.config import DATA_DIR, OUTPUT_DIR
@@ -117,7 +117,7 @@ for dataname in all_datanames:
             quantaframes = quantaframes_base
 
         t0 = time.time()
-        flux = ihpp_fft.uwb1d_quanta(
+        flux = flux_probing.uwb1d_quanta(
             quantaframes,
             Nt=Nt,
             recon_slice=recon_slice_vid,

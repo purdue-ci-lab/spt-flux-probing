@@ -4,7 +4,7 @@ import time
 import cv2
 import numpy as np
 
-from sptflux import ihpp_fft, datastructs, logger, config
+from sptflux import flux_probing, datastructs, logger, config
 from spadlib.io import read_async_spad_zarr
 from spadlib.processing import thin_events_uniform
 
@@ -96,7 +96,7 @@ output_folder.mkdir(parents=True, exist_ok=True)
 t0 = time.time()
 
 # red
-F_r, bound_r, (ft_r, fy_r, fx_r) = ihpp_fft.uwb3d_global_NU(
+F_r, bound_r, (ft_r, fy_r, fx_r) = flux_probing.uwb3d_global_cont(
     x_r, y_r, t_r,
     fx.astype(np.float64), fy.astype(np.float64), ft_r.astype(np.float64),
     V=V, alpha=alpha,
@@ -112,7 +112,7 @@ freqinfo_r = {
 np.savez_compressed(output_folder / f"freqinfo-r.npz", **freqinfo_r)
 
 # green
-F_g, bound_g, (ft_g, fy_g, fx_g) = ihpp_fft.uwb3d_global_NU(
+F_g, bound_g, (ft_g, fy_g, fx_g) = flux_probing.uwb3d_global_cont(
     x_g, y_g, t_g,
     fx.astype(np.float64), fy.astype(np.float64), ft_gb.astype(np.float64),
     V=V, alpha=alpha,
@@ -128,7 +128,7 @@ freqinfo_g = {
 np.savez_compressed(output_folder / f"freqinfo-g.npz", **freqinfo_g)
 
 # blue
-F_b, bound_b, (ft_b, fy_b, fx_b) = ihpp_fft.uwb3d_global_NU(
+F_b, bound_b, (ft_b, fy_b, fx_b) = flux_probing.uwb3d_global_cont(
     x_b, y_b, t_b,
     fx.astype(np.float64), fy.astype(np.float64), ft_gb.astype(np.float64),
     V=V, alpha=alpha,

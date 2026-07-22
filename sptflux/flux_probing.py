@@ -326,19 +326,22 @@ def ihpp_inufft3(ft, F, tt, two_pi=True, eps=1e-6, V=1):
 ################ spatiotemporal functions ################
 def get_3d_window(x, y, t, w=None, window="hann", cuda=False, window_t=True, window_x=True, window_y=True) -> np.ndarray:
     """
-    Get separable 3D window to point weights for 3D NUFFT.
+    Get separable 3D window weights evaluated at the provided coordinates.
 
     Window will be symmetric if the input points are inclusive [0, 1].
     For the purposes of windowing, make sure it is [0, 1) (e.g. endpoint=False).
 
     Args:
-        x, y, t: array-like Coordinates of the points, assumed normalized to [0, 1].
+        x, y, t: array-like Coordinates of the points, assumed normalized to [0, 1) (e.g. endpoint=False).
         w : array-like or None
             Original weights (e.g., flux amplitudes). If None, assume 1s.
         window : str
             Window type ('hann', 'tukey', 'kaiser', etc.)
         **kwargs:
             Parameters for the window function (refer to scipy documentation).
+
+    Returns:
+        w_windowed : window weights, same shape as x, y, t
     """
     xp = cp if cuda else np
     if w is None:
@@ -889,7 +892,7 @@ def bound_idxs_chunked(F_memmap, bound, chunk_size=10_000_000):
     return np.unravel_index(keep_idx, shape=F_shape)
 
 
-def uwb3d_global_NU(
+def uwb3d_global_cont(
     # input events
     x, y, t,
     # frequency values to sweep
@@ -905,10 +908,10 @@ def uwb3d_global_NU(
     chunk_size=None, ft_range_max=None, eps=1e-6, cuda=False
 ):
     """
-    Global nonuniform Fourier transform.
+    Spatiotemporal flux probing for continuous-space points.
 
     Args:
-        x, y, t: array of event coordinates, 1D each
+        x, y, t: array of event coordinates, 1D each. SHOULD BE NORMALIZED TO [0, 1].
         fx, fy, ft: 1D arrays of coordinates for the frequency grid (these will be meshgridded if
             grid_freqs=True)
         xx, yy, tt: 1D arrays of target coordinates for the reconstruction grid (these will be
@@ -976,6 +979,8 @@ def uwb3d_global_NU(
     x_in = xp.ascontiguousarray(xp.asarray(x, dtype="float64"))
     y_in = xp.ascontiguousarray(xp.asarray(y, dtype="float64"))
     t_in = xp.ascontiguousarray(xp.asarray(t, dtype="float64"))
+    if xp.any(x_in < 0) or xp.any(x_in > 1) or xp.any(y_in < 0) or xp.any(y_in > 1) or xp.any(t_in < 0) or xp.any(t_in > 1):
+        raise ValueError("Input coordinates x, y, t must be normalized to [0, 1].")
     if full_spectrum:
         if grid_freqs:
             F = spt_ihpp_nufft3_chunked(
@@ -1062,6 +1067,8 @@ def uwb3d_global_quanta(
     V=None, alpha=None, cuda=False
 ):
     """
+    Spatiotemporal flux probing for a volume of quanta frames.
+
     If you can do a global FFT, that either means it's a small video or you have a comical
     amount of VRAM/RAM/disk. I will not bother with efficiencies and just give back the whole
     Fourier spectrum.
@@ -1096,7 +1103,7 @@ def uwb3d_global_quanta(
     return F, out
 
 
-def uwb3d_patch_quanta(
+def uwb3d_stft_quanta(
     frames,
     patch_sizes=None,
     hop_sizes=None,
@@ -1109,13 +1116,15 @@ def uwb3d_patch_quanta(
     cuda=False, load_frames_on_vram=False, load_output_on_vram=False
 ):
     """
-    3D UWB for a volume of quanta frames.
+    Spatiotemporal flux probing optimized for a volume of quanta frames using a short-time
+    Fourier transform (STFT).
 
     This function also supports frames that contain photon counts instead of just binary arrivals.
     
     Since it's a discrete volume, a standard FFT can be used instead of the slower NUFFT.
 
     Args:
+        frames: 3D array of shape (T, H, W) of quanta frames.
         patch_sizes: tuple of (patch_T, patch_H, patch_W). If None or 0, uses full size along that axis.
         hop_sizes: tuple of (hop_T, hop_H, hop_W). If None or 0, uses full size along that axis (no overlap).
         window: windowing function to apply per patch. If None, no windowing is applied.
@@ -1239,8 +1248,7 @@ def uwb3d_patch_quanta(
             out = np.zeros((Nt_new, Ny_new, Nx_new), dtype="float32")
         else:
             out = np.zeros((Nt, Ny, Nx), dtype="float32")
-        # hann satisfies COLA, and most windows sums will have very low values
-        wsum = np.zeros_like(out, dtype="float16")
+        wsum = np.zeros_like(out, dtype="float32")
         if cuda and load_output_on_vram:
             out = cp.asarray(out)
             wsum = cp.asarray(wsum)
@@ -1523,7 +1531,7 @@ def uwb3d_patch_quanta(
     return F
 
 
-def uwb3d_patch_quanta_speed(
+def uwb3d_stft_quanta_speed(
     frames,
     patch_sizes=None,
     hop_sizes=None,
@@ -1768,8 +1776,8 @@ def uwb1d_quanta(
     cuda=False, load_frames_on_vram=False, load_output_on_vram=False
 ):
     """
-    Implementation of the original Passive Ultra-Wideband paper method.
-    Optimized for quanta videos.
+    Implementation of per-pixel probing as desctibed in the original
+    Passive Ultra-Wideband paper method. Optimized for quanta videos.
     """
     xp = cp if cuda else np
     if cuda and load_frames_on_vram:
@@ -1811,10 +1819,10 @@ def uwb1d_quanta(
     return np.clip(out, 0, None)
 
 
-def spt_ihpp_uwb1d(pixel_timeseries, tt, ft, T_exp, alpha=None, type3=True):
+def uwb1d_cont(pixel_timeseries, tt, ft, T_exp, alpha=None, type3=True):
     """
-    Reconstruct the flux for each pixel using per pixel UWB on each pixel
-    event timeseries.
+    Implementation of per-pixel probing as desctibed in the original
+    Passive Ultra-Wideband paper method. For continuous-time data.
 
     Returns:
         tuple:
