@@ -1176,48 +1176,63 @@ def uwb3d_stft_quanta(
     patch_T, patch_H, patch_W = patch_sizes
     hop_T, hop_H, hop_W = hop_sizes
 
-    # padding data to avoid edge artifacts
-    frames_pad = pad_frames(frames, pad_t=patch_T, pad_y=patch_H, pad_x=patch_W)
-    T_pad, H_pad, W_pad = frames_pad.shape
-    if cuda and load_frames_on_vram:
-        frames_pad = cp.asarray(frames_pad)
-
     window_t = True
     window_y = True
     window_x = True
     window_kwargs = window_kwargs if window_kwargs is not None else {}
-    # deal with unwindowed dimensions or edge case windows
+    # deal with unwindowed dimensions or edge case windows. a dimension that
+    # isn't windowed is also not padded (see pad step below), so its hop/patch
+    # values are set to stay consistent with the unpadded extent.
     if patch_T in (None, 0) or hop_T in (None, 0):
-        t_starts = [0]
         hop_T = 0
         patch_T = T
         window_t = False
     elif patch_T == 1:
-        t_starts = list(range(0, T_pad))
         hop_T = 1
         window_t = False
-    else:
-        t_starts = list(range(0, T_pad - patch_T + 1, hop_T))
     if patch_H in (None, 0) or hop_H in (None, 0):
-        h_starts = [0]
         hop_H = 0
         patch_H = H
         window_y = False
     elif patch_H == 1:
-        h_starts = list(range(0, H_pad))
         hop_H = 1
         window_y = False
-    else:
-        h_starts = list(range(0, H_pad - patch_H + 1, hop_H))
     if patch_W in (None, 0) or hop_W in (None, 0):
-        w_starts = [0]
         hop_W = 0
         patch_W = W
         window_x = False
     elif patch_W == 1:
-        w_starts = list(range(0, W_pad))
         hop_W = 1
         window_x = False
+
+    # padding data to avoid edge artifacts; only pad windowed dimensions
+    frames_pad = pad_frames(
+        frames,
+        pad_t=patch_T if window_t else 0,
+        pad_y=patch_H if window_y else 0,
+        pad_x=patch_W if window_x else 0,
+    )
+    T_pad, H_pad, W_pad = frames_pad.shape
+    if cuda and load_frames_on_vram:
+        frames_pad = cp.asarray(frames_pad)
+
+    # chunk start positions per dimension (consistent with the padding above)
+    if hop_T == 0:  # single full-dimension patch
+        t_starts = [0]
+    elif not window_t:  # patch_T == 1, one patch per (unpadded) slice
+        t_starts = list(range(0, T_pad))
+    else:
+        t_starts = list(range(0, T_pad - patch_T + 1, hop_T))
+    if hop_H == 0:
+        h_starts = [0]
+    elif not window_y:
+        h_starts = list(range(0, H_pad))
+    else:
+        h_starts = list(range(0, H_pad - patch_H + 1, hop_H))
+    if hop_W == 0:
+        w_starts = [0]
+    elif not window_x:
+        w_starts = list(range(0, W_pad))
     else:
         w_starts = list(range(0, W_pad - patch_W + 1, hop_W))
     nchunks_t = len(t_starts)
@@ -1229,7 +1244,13 @@ def uwb3d_stft_quanta(
         # keep these as float32 to save memory
         # we don't need that much precision anyway
         Nt, Ny, Nx = recon_shape
-        recon_pad = (int(Nt * patch_T / T), int(Ny * patch_H / H), int(Nx * patch_W / W))
+        # only pad reconstruction axes that were windowed/padded on the input,
+        # so padded axes stay consistent with frames_pad (unwindowed axes get 0)
+        recon_pad = (
+            int(Nt * patch_T / T) if window_t else 0,
+            int(Ny * patch_H / H) if window_y else 0,
+            int(Nx * patch_W / W) if window_x else 0,
+        )
         recon_shape_pad = (Nt + 2 * recon_pad[0], Ny + 2 * recon_pad[1], Nx + 2 * recon_pad[2])
         recon_slice_inner = (slice(recon_pad[0], recon_pad[0] + Nt), slice(recon_pad[1], recon_pad[1] + Ny), slice(recon_pad[2], recon_pad[2] + Nx))
         Nt_pad, Ny_pad, Nx_pad = recon_shape_pad
