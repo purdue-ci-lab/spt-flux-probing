@@ -1,0 +1,27 @@
+# Run-parameter config for run_uwb3d_quanta.py on spike / event-camera data.
+#   python run_uwb3d_quanta.py --data-type config/data_types/spike_40k.yaml \
+#       --run config/runs/uwb3d_spike.yaml
+output_subdir: results/spike
+
+datanames:
+  - viaduct-bridge
+
+target_fps: [10000]
+keep_probs: [1.0]
+alpha: 1.0e-4
+
+frame_slice: null
+recon_slice: null
+
+window: hann
+window_kwargs: null
+
+window_settings:
+  chunk_t: null  # spike captures are already very short captures <10k frames
+  chunk_h: 100
+  chunk_w: 100
+  hop_t: null
+  hop_h: 25
+  hop_w: 25
+
+max_frames_recon_default: 10000

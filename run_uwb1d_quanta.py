@@ -1,3 +1,4 @@
+import argparse
 import itertools
 from pathlib import Path
 import time
@@ -6,7 +7,7 @@ import dask.array as da
 import numpy as np
 import zarr
 
-from sptflux import flux_probing, utils, quanta_data
+from sptflux import flux_probing, utils, run_config
 from spadlib import io as spio, processing as spproc, video_io as spvid
 from sptflux.logger import get_logger
 from sptflux.config import DATA_DIR, OUTPUT_DIR
@@ -14,57 +15,72 @@ from sptflux.config import DATA_DIR, OUTPUT_DIR
 logger = get_logger(__name__)
 
 
-use_cuda = True
-load_frames_on_vram = True
-load_output_on_vram = True
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Per-pixel flux probing for quanta videos."
+    )
+    parser.add_argument("--data-type", required=True,
+                        help="Path to a data-type YAML (config/data_types/*.yaml).")
+    parser.add_argument("--run", required=True,
+                        help="Path to a run-parameter YAML (config/runs/*.yaml).")
+    parser.add_argument("--recon-slices", default=str(run_config.DEFAULT_RECON_SLICES),
+                        help="Path to the per-dataset recon-slices YAML.")
+    parser.add_argument("--device", type=int, default=0, help="CUDA device index.")
+    parser.add_argument("--cuda", action="store_true",
+                        help="Use CUDA if a GPU is available (default: CPU).")
+    parser.add_argument("--no-vram-frames", dest="load_frames_on_vram", action="store_false",
+                        help="Keep input frames in host memory instead of VRAM.")
+    parser.add_argument("--no-vram-output", dest="load_output_on_vram", action="store_false",
+                        help="Keep the output in host memory instead of VRAM.")
+    parser.add_argument("--zip", action="store_true",
+                        help="Zip each run's output dir into the transfer dir when done.")
+    parser.add_argument("--save-flux-vid", action="store_true",
+                        help="Also save a video of the flux (default: only save gamma-corrected video).")
+    parser.add_argument("--save-gamma-pngs", action="store_true",
+                        help="Also save a folder of gamma-corrected PNGs (default: only save video).")
+    return parser.parse_args()
+
+
+args = parse_args()
+use_cuda = args.cuda
+load_frames_on_vram = args.load_frames_on_vram
+load_output_on_vram = args.load_output_on_vram
+save_flux_vid = args.save_flux_vid
+save_gamma_pngs = args.save_gamma_pngs
 if use_cuda:
-    import cupy as cp
-    cp.cuda.runtime.setDevice(0)
+    try:
+        import cupy as cp
+        if cp.cuda.runtime.getDeviceCount() == 0:
+            raise RuntimeError("no CUDA devices found")
+        cp.cuda.runtime.setDevice(args.device)
+    except Exception as e:
+        logger.warning(f"CUDA requested but unavailable ({e}); falling back to CPU.")
+        use_cuda = False
 
-MAX_FRAMES_RECON_DEFAULT = 2000  # to prevent high fps from accidentally taking 50+ GB, unless intended
+data_type = run_config.load_yaml(args.data_type)
+run = run_config.load_yaml(args.run)
+recon_slices = run_config.load_recon_slices(args.recon_slices)
+
+src_H = data_type["src_H"]
+src_W = data_type["src_W"]
+src_fps = data_type["src_fps"]
+data_dir = DATA_DIR / data_type["data_subdir"]
+
+output_parent_dir = OUTPUT_DIR / run["output_subdir"]
+all_datanames = run["datanames"]
+all_target_fps = run["target_fps"]
+all_keepprobs = run["keep_probs"]
+alpha = run["alpha"]
+frame_slice = run_config.as_txy_slice(run_config.parse_slice(run["frame_slice"]))
+recon_slice_run = run_config.parse_slice(run["recon_slice"])
+max_frames_recon_default = run["max_frames_recon_default"]  # avoid accidental 50+ GB outputs
+
 ZIP_TRANSFER_DIR = OUTPUT_DIR / "zipresults"
-
-########## START DATA SETUP ##########
-########## 100k fps quanta data ##########
-# automatically determine output dimensions
-# Nt = None
-# all_target_fps = [1_000, 10_000, 100_000]
-# frame_slice = (slice(None), slice(None), slice(None))
-# recon_slice = None
-# alpha = None
-# data_dir = DATA_DIR / "quanta"
-# output_parent_dir = OUTPUT_DIR / "results/uwb1d/quanta"
-# all_datanames = ["Feb28_balloonBounce_acq0_2221ppps"]
-# all_keepprobs = [1.0, 1/20, 1/50, 1/100]
-# fps = 100_000  # default fps
-
-########## 128k fps upscaled quanta data ##########
-Nt = None  # all the videos have a different number of frames
-all_target_fps = [128_000]
-frame_slice = (slice(None), slice(None), slice(None))
-# resample at original 1000 fps, but with upsampled reconstruction
-recon_slice = slice(None, None, 128)
-alpha = None
-data_dir = DATA_DIR / "phantom-synth/upsampled"
-output_parent_dir = OUTPUT_DIR / "results/uwb1d/phantom-synth"
-all_datanames = [
-    "cerealmilk-fps1000_rife4_linear8_ppp0.1",
-    "coffeebeans-fps1000_rife4_linear8_ppp0.1",
-    "fireblast-fps1000_rife4_linear8_ppp0.1",
-    "grasswaterfall-fps1000_rife4_linear8_ppp0.1",
-    "shoewaterstep-fps1000_rife4_linear8_ppp0.1",
-    "strawberrymilk-fps1000_rife4_linear8_ppp0.1",
-    "waterbubbles-fps1000_rife4_linear8_ppp0.1",
-    "wineglassfall-fps1000_rife4_linear8_ppp0.1"
-]
-all_keepprobs = [1.0, 1/10, 1/50]
-fps = 128_000
-########## END DATA SETUP ##########
 
 for dataname in all_datanames:
     # leave without extension to search for the format-agnostic reader in ihpp_data.read_quanta_auto
     quantapath = data_dir / f"{dataname}"
-    quantaframes_base, metadata = spio.read_quanta_auto(quantapath)  # shape: (T, H, W)
+    quantaframes_base, metadata = spio.read_quanta_auto(quantapath, H=src_H, W=src_W)  # shape: (T, H, W)
     if frame_slice is not None:
         quantaframes_base = quantaframes_base[frame_slice]
     nframes = quantaframes_base.shape[0]
@@ -72,24 +88,22 @@ for dataname in all_datanames:
     binvidT, binvidH, binvidW = quantaframes_base.shape
     nevents_orig = da.count_nonzero(quantaframes_base).compute()
     if metadata is not None:
-        fps_vid = metadata.get("fps", fps)
+        fps_vid = metadata.get("fps", src_fps)
     else:
-        fps_vid = fps
+        fps_vid = src_fps
     T_exp = nframes / fps_vid
 
     for keep_prob, target_fps in itertools.product(all_keepprobs, all_target_fps):
         alpha_vid = alpha
         Nt = int(nframes * target_fps / fps_vid)
-        if recon_slice is not None:
-            recon_slice_vid = recon_slice
-        elif (dataname, target_fps) in quanta_data.data_configs:
-            data_config = quanta_data.data_configs[(dataname, target_fps)]
-            recon_slice_vid = data_config.get("recon_slice", recon_slice)
+        if recon_slice_run is not None:
+            recon_slice_vid = recon_slice_run
+        elif (dataname, target_fps) in recon_slices:
+            recon_slice_vid = recon_slices[(dataname, target_fps)]
+        elif Nt > max_frames_recon_default:
+            recon_slice_vid = slice(0, max_frames_recon_default)
         else:
-            if Nt > MAX_FRAMES_RECON_DEFAULT:
-                recon_slice_vid = (slice(0, MAX_FRAMES_RECON_DEFAULT), slice(None), slice(None))
-            else:
-                recon_slice_vid = None
+            recon_slice_vid = None
         logger.info(f"Starting 1D UWB for {dataname} with keep_prob={keep_prob} and target_fps={target_fps}")
         playfps = int(round(Nt / T_exp))
         alphastr = "None" if alpha_vid is None else f"{alpha_vid:.5f}"
@@ -135,7 +149,7 @@ for dataname in all_datanames:
         flux_to_save = np.asarray(flux, dtype="float32")
 
         framenum_all = np.arange(0, Nt)
-        framenum_slice = framenum_all if recon_slice is None else framenum_all[recon_slice]
+        framenum_slice = framenum_all if recon_slice_vid is None else framenum_all[recon_slice_vid]
         reconinfo = {
             "flux": flux_to_save,
             "framenums": framenum_slice
@@ -147,9 +161,9 @@ for dataname in all_datanames:
             "alpha": alpha_vid,
             "nframes_total": Nt,
             "nframes_recon": flux.shape[0],
-            "frame_start": recon_slice.start if recon_slice is not None else 0,
-            "frame_end": recon_slice.stop if recon_slice is not None else Nt,
-            "frame_step": recon_slice.step if recon_slice is not None else 1,
+            "frame_start": recon_slice_vid.start if recon_slice_vid is not None else 0,
+            "frame_end": recon_slice_vid.stop if recon_slice_vid is not None else Nt,
+            "frame_step": recon_slice_vid.step if recon_slice_vid is not None else 1,
         }
         print("calculating flux statistics")
         print(f"flux dtype: {flux.dtype}, max value: {np.max(flux)}, min value: {np.min(flux)}, mean value: {np.mean(flux)}")
@@ -175,10 +189,28 @@ for dataname in all_datanames:
             playback_fps=30, cmap="grey", vmin=0, vmax=maxflux
         )
 
-        zipoutpath = utils.zip_run(
-            output_dir, ZIP_TRANSFER_DIR, run_id=recon_str_format, append_time=False
-        )
-        logger.info(f"Zipped results to {zipoutpath}")
+        # fluxes are generally pointless to save because they're too dark to see anything useful
+        if save_flux_vid:
+            spvid.write_video(
+                flux,
+                output_dir / f"flux.mp4",
+                gamma=1.0,
+                playback_fps=30, cmap="grey", vmin=0, vmax=maxflux
+            )
+        # takes a while to generate pngs frames
+        if save_gamma_pngs:
+            spvid.write_video(
+                flux,
+                output_dir / f"gamma",
+                gamma=1/2.2,
+                cmap="grey", fileformat="png", vmin=0, vmax=maxflux
+            )
+
+        if args.zip:
+            zipoutpath = utils.zip_run(
+                output_dir, ZIP_TRANSFER_DIR, run_id=recon_str_format, append_time=False
+            )
+            logger.info(f"Zipped results to {zipoutpath}")
 
         del flux, flux_to_save, reconinfo
         if keep_prob < 1.0:

@@ -1294,10 +1294,13 @@ def uwb3d_stft_quanta(
             nfy = out_y_size_chunk
             nft = out_t_size_chunk
             nft_half = nft // 2 + 1
-        ft = xp.fft.rfftfreq(patch_T, 1 / patch_T)
-        fy = xp.fft.fftfreq(patch_H, 1 / patch_H)
-        fx = xp.fft.fftfreq(patch_W, 1 / patch_W)
-        ftt, fyy, fxx = xp.meshgrid(ft, fy, fx, indexing="ij")
+        if filter_func is not None:
+            # actual knowledge of frequency values is only needed if some sort
+            # of filtering is being applied and needs to know the values.
+            ft = xp.fft.rfftfreq(patch_T, 1 / patch_T)
+            fy = xp.fft.fftfreq(patch_H, 1 / patch_H)
+            fx = xp.fft.fftfreq(patch_W, 1 / patch_W)
+            ftt, fyy, fxx = xp.meshgrid(ft, fy, fx, indexing="ij")
         weight_output = get_3d_window_volume(
             (out_t_size_chunk, out_y_size_chunk, out_x_size_chunk), window=window, cuda=cuda,
             window_t=window_t, window_x=window_x, window_y=window_y,

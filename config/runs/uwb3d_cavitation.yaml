@@ -1,0 +1,31 @@
+# Run-parameter config for run_uwb3d_quanta.py on synthetic cavitation data.
+# Pairs with cavitation_synth (fps read from zarr metadata).
+#   python run_uwb3d_quanta.py --data-type config/data_types/cavitation_synth.yaml \
+#       --run config/runs/uwb3d_cavitation.yaml
+output_subdir: results/phantom-synth
+
+datanames:
+  - cavitation1_rife4_linear8_ppp1
+  # - cavitation1_rife0_linear1_ppp0.1
+  # - cavitation1_rife2_linear1_ppp0.1
+  # - cavitation1_rife4_linear8_ppp0.1
+
+target_fps: [100000]
+keep_probs: [1.0]
+alpha: 1.0e-3
+
+frame_slice: null
+recon_slice: [null, null]        # full reconstruction (do not look up per-dataset slice)
+
+window: hann
+window_kwargs: null
+
+window_settings:
+  chunk_t: 10000
+  chunk_h: 32
+  chunk_w: 32
+  hop_t: 2500
+  hop_h: 8
+  hop_w: 8
+
+max_frames_recon_default: 2000

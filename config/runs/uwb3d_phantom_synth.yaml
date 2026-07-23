@@ -1,0 +1,38 @@
+# Run-parameter config for run_uwb3d_quanta.py.
+# Pair with a data-type config, e.g.:
+#   python run_uwb3d_quanta.py --data-type config/data_types/phantom_synth_128k.yaml \
+#       --run config/runs/uwb3d_phantom_synth.yaml
+output_subdir: results/phantom-synth   # relative to OUTPUT_DIR
+
+datanames:
+  - wineglassfall-fps1000_rife4_linear8_ppp0.1
+  # - cerealmilk-fps1000_rife4_linear8_ppp0.1
+  # - coffeebeans-fps1000_rife4_linear8_ppp0.1
+  # - fireblast-fps1000_rife4_linear8_ppp0.1
+  # - grasswaterfall-fps1000_rife4_linear8_ppp0.1
+  # - shoewaterstep-fps1000_rife4_linear8_ppp0.1
+  # - strawberrymilk-fps1000_rife4_linear8_ppp0.1
+  # - waterbubbles-fps1000_rife4_linear8_ppp0.1
+
+target_fps: [1000]
+keep_probs: [1.0]
+alpha: 1.0e-4                # null for no regularization
+
+# Time-axis slices: [start, stop] or [start, stop, step]; null = full.
+frame_slice: [null, null]   # applied to source frames before reconstruction
+recon_slice: [null, null, 128]        # null = look up config/recon_slices.yaml, else default cap
+
+window: hann
+window_kwargs: null
+# window: gaussian
+# window_kwargs: {std: [3000.0, 5.0, 5.0]}
+
+window_settings:
+  chunk_t: 10000
+  chunk_h: 100
+  chunk_w: 100
+  hop_t: 2500
+  hop_h: 25
+  hop_w: 25
+
+max_frames_recon_default: 2000   # cap when recon_slice is unset, to avoid huge outputs

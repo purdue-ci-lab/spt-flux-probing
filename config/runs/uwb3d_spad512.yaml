@@ -1,0 +1,28 @@
+# Run-parameter config for run_uwb3d_quanta.py on 100k fps SPAD512 quanta data.
+#   python run_uwb3d_quanta.py --data-type config/data_types/spad512_100k.yaml \
+#       --run config/runs/uwb3d_spad512.yaml
+output_subdir: results/quanta
+
+datanames:
+  - Feb29_balloonbounce_acq0_2875ppps.zarr
+  - Feb28_blender_acq7_2986ppps.zarr
+
+target_fps: [100000]
+keep_probs: [1.0, 0.1]
+alpha: 1.0e-4
+
+frame_slice: [null, null, null]
+recon_slice: null                # look up config/recon_slices.yaml, else default cap
+
+window: hann
+window_kwargs: null
+
+window_settings:
+  chunk_t: 10000
+  chunk_h: 100
+  chunk_w: 100
+  hop_t: 2500
+  hop_h: 25
+  hop_w: 25
+
+max_frames_recon_default: 2000

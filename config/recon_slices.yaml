@@ -1,0 +1,63 @@
+# Per-dataset reconstruction windows, keyed by (dataname, target_fps).
+# recon_slice is a time-axis [start, stop] or [start, stop, step] (null = full).
+# Used when a run config leaves recon_slice unset (null).
+
+# new captures
+- {dataname: plasma-ball, fps: 50000, recon_slice: [20000, 25000]}
+- {dataname: bright1, fps: 100000, recon_slice: [11300, 15500]}
+- {dataname: bright2, fps: 100000, recon_slice: [2400, 6100]}
+- {dataname: dark1, fps: 100000, recon_slice: [36500, 41700]}
+- {dataname: ultra_dark1, fps: 100000, recon_slice: [36400, 41400]}
+- {dataname: ultra_dark2, fps: 100000, recon_slice: [0, 5000]}
+- {dataname: fanclock_bright, fps: 100000, recon_slice: [1000, 3000]}
+- {dataname: fanclock_bright_spadnd, fps: 100000, recon_slice: [1000, 3000]}
+- {dataname: fanclock_dark, fps: 100000, recon_slice: [1000, 3000]}
+- {dataname: teaser-gunballoon-dark-acq00002, fps: 100000, recon_slice: [83500, 89000]}
+- {dataname: teaser_balloonbounce_dark, fps: 100000, recon_slice: [24300, 37900]}
+- {dataname: teaser_balloonbounce_bright, fps: 100000, recon_slice: [33600, 46500]}
+- {dataname: teaser-blender-dark, fps: 100000, recon_slice: [70000, 73000]}
+- {dataname: teaser-blender-bright1, fps: 100000, recon_slice: [39000, 42000]}
+- {dataname: balloon-laser-acq00000, fps: 100000, recon_slice: [5000, 15000]}
+- {dataname: balloon-laser-acq00001, fps: 100000, recon_slice: [30000, 40000]}
+- {dataname: balloon-laser-acq00002, fps: 100000, recon_slice: [30000, 40000]}
+- {dataname: Feb27_balloonbounce_acq3_2740ppps, fps: 100000, recon_slice: [12800, 24200]}
+- {dataname: Feb27_balloonbounce_acq4_3100ppps, fps: 100000, recon_slice: [23000, 33000]}
+- {dataname: Feb27_balloonbounce_acq7_1000ppps, fps: 100000, recon_slice: [18500, 30000]}
+- {dataname: Feb28_balloonBounce_acq0_2221ppps, fps: 100000, recon_slice: [19600, 29500]}
+- {dataname: Feb28_balloonBounce_acq0_2221ppps, fps: 10000, recon_slice: [1960, 2950]}
+- {dataname: Feb28_balloonBounce_acq0_2221ppps, fps: 2000, recon_slice: [392, 590]}
+- {dataname: Feb28_balloonBounce_acq2_2365ppps, fps: 100000, recon_slice: [33300, 42500]}
+- {dataname: Feb29_balloonbounce_acq0_2875ppps, fps: 100000, recon_slice: [18500, 28100]}
+- {dataname: Feb27_balls_acq9_2948, fps: 100000, recon_slice: [59100, 76000]}
+- {dataname: Feb27_balls_acq11_5114, fps: 100000, recon_slice: [50600, 68000]}
+- {dataname: Feb27_blender_acq13_6041ppps, fps: 100000, recon_slice: [90000, 100000]}
+- {dataname: Feb27_blender_acq15_4351ppps, fps: 100000, recon_slice: [65000, 75000]}
+- {dataname: Feb28_blender_acq7_2986ppps, fps: 100000, recon_slice: [50000, 58000]}
+
+# old quanta data
+- {dataname: fan, fps: 100000, recon_slice: [70000, 72000]}
+
+# qbp data
+- {dataname: 0116-guitar-f4-tworow-aa-3, fps: 100000, recon_slice: [42500, 48700]}
+
+# bit2bit data
+- {dataname: Monkey, fps: 100000, recon_slice: [0, 10000]}
+- {dataname: Resolution_target_drill, fps: 100000, recon_slice: [0, 3000]}
+- {dataname: cpufan_restarget, fps: 100000, recon_slice: [20000, 25000]}
+- {dataname: plasma_ball_5_med, fps: 100000, recon_slice: [20000, 25000]}
+- {dataname: ultrasound_bubble24, fps: 100000, recon_slice: [15000, 25000, 50]}
+
+# misc data
+- {dataname: blender_lasagna_bright, fps: 50000, recon_slice: [30000, 32000]}
+- {dataname: blender_lasagna_dark, fps: 50000, recon_slice: [30000, 32000]}
+- {dataname: blender_lasagna_dark, fps: 100000, recon_slice: [25000, 27000]}
+- {dataname: balloon1, fps: 100000, recon_slice: [71800, 73800]}
+- {dataname: balloon_gun1, fps: 50000, recon_slice: [38350, 40350]}
+- {dataname: balloon_gun2, fps: 50000, recon_slice: [42500, 44500]}
+- {dataname: balloon_gun3, fps: 50000, recon_slice: [0, 2000]}
+- {dataname: balloon_gun3, fps: 100000, recon_slice: [2000, 4000]}
+- {dataname: gun_balloon_dark, fps: 50000, recon_slice: [12000, 14000]}
+- {dataname: balloon_fly1, fps: 50000, recon_slice: [2350, 4350]}
+- {dataname: balloon_fly1_alt, fps: 50000, recon_slice: [6000, 8000]}
+- {dataname: balloon_fly2, fps: 50000, recon_slice: [4750, 6750]}
+- {dataname: lasagna2, fps: 50000, recon_slice: [18939, 20939]}

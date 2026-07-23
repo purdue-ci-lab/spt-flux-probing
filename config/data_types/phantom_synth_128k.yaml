@@ -1,0 +1,5 @@
+# Data-type config: 128k fps upsampled synthetic quanta data (phantom-synth).
+src_H: 256
+src_W: 512
+src_fps: 128000
+data_subdir: phantom-synth/upsampled

@@ -1,3 +1,4 @@
+import argparse
 import itertools
 from pathlib import Path
 import time
@@ -6,7 +7,7 @@ import dask.array as da
 import numpy as np
 import zarr
 
-from sptflux import flux_probing, utils, quanta_data
+from sptflux import flux_probing, utils, run_config
 from spadlib import io as spio, processing as spproc, video_io as spvid
 from sptflux.logger import get_logger
 from sptflux.config import DATA_DIR, OUTPUT_DIR
@@ -14,182 +15,77 @@ from sptflux.config import DATA_DIR, OUTPUT_DIR
 logger = get_logger(__name__)
 
 
-use_cuda = True
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Windowed spatiotemporal flux probing with via STFT for quanta videos."
+    )
+    parser.add_argument("--data-type", required=True,
+                        help="Path to a data-type YAML (config/data_types/*.yaml).")
+    parser.add_argument("--run", required=True,
+                        help="Path to a run-parameter YAML (config/runs/*.yaml).")
+    parser.add_argument("--recon-slices", default=str(run_config.DEFAULT_RECON_SLICES),
+                        help=f"Path to the per-dataset recon-slices YAML (default: {run_config.DEFAULT_RECON_SLICES}).")
+    parser.add_argument("--device", type=int, default=0, help="CUDA device index.")
+    parser.add_argument("--cuda", action="store_true",
+                        help="Use CUDA if a GPU is available (default: CPU).")
+    parser.add_argument("--no-vram-frames", dest="load_frames_on_vram", action="store_false",
+                        help="Keep input frames in host memory instead of VRAM.")
+    parser.add_argument("--no-vram-output", dest="load_output_on_vram", action="store_false",
+                        help="Keep the output in host memory instead of VRAM.")
+    parser.add_argument("--zip", action="store_true",
+                        help="Zip each run's output dir into the transfer dir when done.")
+    parser.add_argument("--save-flux-vid", action="store_true",
+                        help="Also save a video of the flux (default: only save gamma-corrected video).")
+    parser.add_argument("--save-gamma-pngs", action="store_true",
+                        help="Also save a folder of gamma-corrected PNGs (default: only save video).")
+    return parser.parse_args()
+
+
+args = parse_args()
 # without padding, 100kx512x512 takes ~25 GB
 # with padding, like 102000x640x640 takes ~42 GB
-load_frames_on_vram = True
-load_output_on_vram = True
+use_cuda = args.cuda
+load_frames_on_vram = args.load_frames_on_vram
+load_output_on_vram = args.load_output_on_vram
+save_flux_vid = args.save_flux_vid
+save_gamma_pngs = args.save_gamma_pngs
 if use_cuda:
-    import cupy as cp
-    device = 1
-    cp.cuda.runtime.setDevice(device)
+    try:
+        import cupy as cp
+        if cp.cuda.runtime.getDeviceCount() == 0:
+            raise RuntimeError("no CUDA devices found")
+        cp.cuda.runtime.setDevice(args.device)
+    except Exception as e:
+        logger.warning(f"CUDA requested but unavailable ({e}); falling back to CPU.")
+        use_cuda = False
 
-MAX_FRAMES_RECON_DEFAULT = 2000  # to prevent high fps from accidentally taking 50+ GB, unless intended
-ALPHA_UNTHINNED = 0.0001
-ALPHA_THINNED = 0.0001
+data_type = run_config.load_yaml(args.data_type)
+run = run_config.load_yaml(args.run)
+recon_slices = run_config.load_recon_slices(args.recon_slices)
+
+src_H = data_type["src_H"]
+src_W = data_type["src_W"]
+src_fps = data_type["src_fps"]
+data_dir = DATA_DIR / data_type["data_subdir"]
+
+output_parent_dir = OUTPUT_DIR / run["output_subdir"]
+all_datanames = run["datanames"]
+all_target_fps = run["target_fps"]
+all_keepprobs = run["keep_probs"]
+alpha = run["alpha"]
+frame_slice = run_config.as_txy_slice(run_config.parse_slice(run["frame_slice"]))
+recon_slice_run = run_config.parse_slice(run["recon_slice"])
+window = run["window"]
+window_kwargs = run["window_kwargs"]
+window_settings = run["window_settings"]
+max_frames_recon_default = run["max_frames_recon_default"]  # avoid accidental 50+ GB outputs
+
 ZIP_TRANSFER_DIR = OUTPUT_DIR / "zipresults"
 
-########## START DATA SETUP ##########
-########## 100k fps quanta data ##########
-# automatically determine output dimensions
-# Nt = None
-# all_target_fps = [500]
-# Ny = None
-# Nx = None
-# frame_slice = (slice(None, None, 200), slice(None), slice(None))
-# # recon_slice = (slice(0, 2000), slice(None), slice(None))
-# recon_slice = None
-# alpha = 1e-4
-# data_dir = DATA_DIR / "quanta"
-# output_parent_dir = OUTPUT_DIR / "results/quanta"
-# all_datanames = ["gun-2s"]
-# all_keepprobs = [1.0]
-# # window_settings = quanta_data.WINDOW_SETTINGS_SPEED
-# window_settings = {
-#     "chunk_t": 128,
-#     "chunk_h": 64,
-#     "chunk_w": 64,
-#     "hop_t": 64,
-#     "hop_h": 32,
-#     "hop_w": 32
-# }
-# src_W = 512
-# src_H = 512
-# fps = 100_000  # default source video fps
-
-########## 1 million fps videos ##########
-# Nt = 1000
-# Ny = 512
-# Nx = 512
-# cfarscale = 2.0
-# data_dir = Path("data/quanta")
-# output_parent_dir = Path("output/results/quanta")
-# # all_datanames = ["elevator", "fountain"]
-# all_datanames = ["elevator"]
-# # all_keepprobs = [1.0, 1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128, 1/256]
-# all_keepprobs = [1.0]
-# fps = 1_000_000
-
-########## bit2bit data ##########
-# Nt = 2000
-# Ny = 512
-# Nx = 512
-# cfarscale = 2.0
-# data_dir = Path("data/bit2bit-data")
-# output_parent_dir = Path("output/results/bit2bit")
-# # all_datanames = ["Monkey_002us_100000fs_dim", "Resolution_target_drill_002us_100000fs"]
-# all_datanames = ["Resolution_target_drill_002us_100000fs"]
-# all_keepprobs = [1.0]
-# fps = 100_000
-
-########## spike data ##########
-# Nt = None
-# all_target_fps = [10_000]
-# Ny = None
-# Nx = None
-# frame_slice = (slice(None), slice(None), slice(None))
-# recon_slice = None
-# alpha = 0.0001
-# data_dir = DATA_DIR / Path("spike")
-# output_parent_dir = OUTPUT_DIR / Path("results/spike")
-# all_datanames = ["viaduct-bridge"]
-# all_keepprobs = [1.0]
-# window_settings = {
-#     "chunk_t": 500,
-#     "chunk_h": 64,
-#     "chunk_w": 64,
-#     "hop_t": 125,
-#     "hop_h": 16,
-#     "hop_w": 16
-# }
-# fps = 40_000
-
-########## 128k fps upscaled quanta data ##########
-Nt = None  # all the videos have a different number of frames
-all_target_fps = [1000]
-Ny = None
-Nx = None
-frame_slice = (slice(None, None, 128), slice(None), slice(None))
-# resample at original 1000 fps, but with upsampled reconstruction
-recon_slice = (slice(None), slice(None), slice(None))
-alpha = 1e-4
-data_dir = DATA_DIR / "phantom-synth/upsampled"
-output_parent_dir = OUTPUT_DIR / "results/phantom-synth"
-all_datanames = [
-    # "cerealmilk-fps1000_rife4_linear8_ppp0.1",
-    # "coffeebeans-fps1000_rife4_linear8_ppp0.1",
-    # "fireblast-fps1000_rife4_linear8_ppp0.1",
-    # "grasswaterfall-fps1000_rife4_linear8_ppp0.1",
-    # "shoewaterstep-fps1000_rife4_linear8_ppp0.1",
-    # "strawberrymilk-fps1000_rife4_linear8_ppp0.1",
-    # "waterbubbles-fps1000_rife4_linear8_ppp0.1",
-    "wineglassfall-fps1000_rife4_linear8_ppp0.1",
-    # "binary_ppp0.01_fps115393_T115393_H256_W512",
-    # "binary_ppp0.05_fps115393_T115393_H256_W512",
-]
-window_settings = {
-    "chunk_t": 128,
-    "chunk_h": 64,
-    "chunk_w": 64,
-    "hop_t": 64,
-    "hop_h": 32,
-    "hop_w": 32,
-}
-all_keepprobs = [1.0]
-src_W = 512
-src_H = 256
-fps = 128_000
-
-########## 10 million fps phantom camera data ##########
-# Nt = 256
-# Ny = 250
-# Nx = 400
-# recon_slice = None
-# cfarscale = 2.0
-# data_dir = Path("data/phantom")
-# output_parent_dir = Path("output/results/phantom")
-# all_datanames = ["0.5cmx6cm-1_ppp0.1"]
-# all_keepprobs = [1.0]
-# fps = 10_000_000
-
-########## 100k fps cavitation data ##########
-# Nt = None  # all the videos have a different number of frames
-# all_target_fps = [100_000]
-# Ny = None
-# Nx = None
-# frame_slice = (slice(None), slice(None), slice(None))
-# recon_slice = (slice(None), slice(None), slice(None))
-# # alpha = "auto"
-# alpha = 1e-3
-# data_dir = DATA_DIR / "phantom-synth/upsampled"
-# output_parent_dir = OUTPUT_DIR / "results/phantom-synth"
-# all_datanames = [
-#     # "cavitation1_rife0_linear1_ppp0.1",
-#     # "cavitation1_rife2_linear1_ppp0.1",
-#     # "cavitation1_rife4_linear8_ppp0.1",
-#     "cavitation1_rife4_linear8_ppp1",
-# ]
-# window_settings = {
-#     "chunk_t": 10000,
-#     "chunk_h": 32,
-#     "chunk_w": 32,
-#     "hop_t": 2500,
-#     "hop_h": 8,
-#     "hop_w": 8,
-# }
-# all_keepprobs = [1.0]
-# # determine fps from zarr metadata
-# fps = None
-########## END DATA SETUP ##########
-
-########## Other variable setup ##########
 # spatiotemporal chunked NUFFT reconstruction using fixed chunk sizes and hop (overlap-add with windows)
 # padding actually implemented so the whole video is reconstructed kind of properly
-window = "hann"
-window_kwargs = None
-# window = "gaussian"
-# window_kwargs = {"std": (3000.0, 5.0, 5.0)}
-########## End variable setup ##########
+chunk_t, chunk_h, chunk_w = window_settings["chunk_t"], window_settings["chunk_h"], window_settings["chunk_w"]
+hop_t, hop_h, hop_w = window_settings["hop_t"], window_settings["hop_h"], window_settings["hop_w"]
 
 for dataname in all_datanames:
     # leave without extension to search for the format-agnostic reader in ihpp_data.read_quanta_auto
@@ -198,9 +94,9 @@ for dataname in all_datanames:
         quantapath, load_data=True, H=src_H, W=src_W
     )  # shape: (T, H, W)
     if metadata is not None:
-        fps_vid = metadata.get("fps", fps)
+        fps_vid = metadata.get("fps", src_fps)
     else:
-        fps_vid = fps
+        fps_vid = src_fps
     if frame_slice is not None:
         quantaframes_base = quantaframes_base[frame_slice]
         frameslice_tstep = frame_slice[0].step if frame_slice[0].step is not None else 1
@@ -214,46 +110,28 @@ for dataname in all_datanames:
     V = T_exp * binvidH * binvidW
 
     for keep_prob, target_fps in itertools.product(all_keepprobs, all_target_fps):
-        if alpha == "auto":
-            if keep_prob < 1.0:
-                alpha_vid = ALPHA_THINNED
-            else:
-                alpha_vid = ALPHA_UNTHINNED
-        else:
-            alpha_vid = alpha
+        alpha_vid = alpha
         Nt = int(nframes * target_fps / fps_vid)
         recon_shape = (Nt, Ny, Nx)
-        if recon_slice is not None:
-            recon_slice_vid = recon_slice
-        elif (dataname, target_fps) in quanta_data.data_configs:
-            data_config = quanta_data.data_configs[(dataname, target_fps)]
-            recon_slice_vid = data_config.get("recon_slice", recon_slice)
+        if recon_slice_run is not None:
+            recon_slice_vid = run_config.as_txy_slice(recon_slice_run)
+        elif (dataname, target_fps) in recon_slices:
+            recon_slice_vid = run_config.as_txy_slice(recon_slices[(dataname, target_fps)])
+        elif Nt > max_frames_recon_default:
+            recon_slice_vid = run_config.as_txy_slice(slice(0, max_frames_recon_default))
         else:
-            if Nt > MAX_FRAMES_RECON_DEFAULT:
-                recon_slice_vid = (slice(0, MAX_FRAMES_RECON_DEFAULT), slice(None), slice(None))
-            else:
-                recon_slice_vid = None
+            recon_slice_vid = None
         logger.info(f"Starting STFT for {dataname} with keep_prob={keep_prob} and target_fps={target_fps}")
         playfps = int(round(Nt / T_exp))
         alphastr = "None" if alpha_vid is None else f"{alpha_vid:.5f}"
-        if recon_slice is None:
+        if recon_slice_vid is None:
             slicestr = "slicefull"
         else:
-            if recon_slice[0].step is not None and recon_slice[0].step != 1:
-                slicestr = f"slice{recon_slice[0].start}_{recon_slice[0].stop}_{recon_slice[0].step}"
+            s0 = recon_slice_vid[0]
+            if s0.step is not None and s0.step != 1:
+                slicestr = f"slice{s0.start}_{s0.stop}_{s0.step}"
             else:
-                slicestr = f"slice{recon_slice[0].start}_{recon_slice[0].stop}"
-        window_settings_data = None
-        if window_settings == "auto":
-            if keep_prob < 1.0:
-                window_settings_data = quanta_data.WINDOW_SETTINGS_DARK
-            else:
-                window_settings_data = quanta_data.WINDOW_SETTINGS_BRIGHT
-            logger.info(f"Automatically selected window settings: {window_settings_data}")
-        else:
-            window_settings_data = window_settings
-        chunk_t, chunk_h, chunk_w = window_settings_data["chunk_t"], window_settings_data["chunk_h"], window_settings_data["chunk_w"]
-        hop_t, hop_h, hop_w = window_settings_data["hop_t"], window_settings_data["hop_h"], window_settings_data["hop_w"]
+                slicestr = f"slice{s0.start}_{s0.stop}"
 
         recon_str_format = "-".join([
             f"{dataname}", slicestr, f"chunks{chunk_t}x{chunk_h}x{chunk_w}",
@@ -287,20 +165,12 @@ for dataname in all_datanames:
             patch_sizes=(chunk_t, chunk_h, chunk_w),
             hop_sizes=(hop_t, hop_h, hop_w),
             window=window, window_kwargs=window_kwargs,
-            recon_shape=recon_shape, recon_slice=recon_slice,
+            recon_shape=recon_shape, recon_slice=recon_slice_vid,
             filter_func=None,
             V=V, alpha=alpha_vid, use_recon_nyquist=True,
             save_fourier_coeffs=False, all_fourier_coeffs=False,
             cuda=use_cuda, load_frames_on_vram=load_frames_on_vram, load_output_on_vram=load_output_on_vram
         )
-        # flux = flux_probing.uwb3d_patch_quanta_speed(
-        #     quantaframes,
-        #     patch_sizes=(chunk_t, chunk_h, chunk_w),
-        #     hop_sizes=(hop_t, hop_h, hop_w),
-        #     window=window, window_kwargs=window_kwargs,
-        #     recon_shape=recon_shape,
-        #     V=V, cfarscale=cfarscale
-        # )
         t1 = time.time()
         logger.info(f"Completed patch-based UWB-3D NUFFT reconstruction in {t1 - t0:.2f} seconds")
 
@@ -314,7 +184,7 @@ for dataname in all_datanames:
         flux_to_save = np.asarray(flux, dtype="float32")
 
         framenum_all = np.arange(0, Nt)
-        framenum_slice = framenum_all if recon_slice is None else framenum_all[recon_slice[0]]
+        framenum_slice = framenum_all if recon_slice_vid is None else framenum_all[recon_slice_vid[0]]
         reconinfo = {
             "flux": flux_to_save,
             "framenums": framenum_slice
@@ -327,28 +197,10 @@ for dataname in all_datanames:
             "window": window,
             "nframes_total": Nt,
             "nframes_recon": flux.shape[0],
-            "frame_start": recon_slice[0].start if recon_slice is not None else 0,
-            "frame_end": recon_slice[0].stop if recon_slice is not None else Nt,
-            "frame_step": recon_slice[0].step if recon_slice is not None else 1,
+            "frame_start": recon_slice_vid[0].start if recon_slice_vid is not None else 0,
+            "frame_end": recon_slice_vid[0].stop if recon_slice_vid is not None else Nt,
+            "frame_step": recon_slice_vid[0].step if recon_slice_vid is not None else 1,
         }
-        # if windowing in any dimension: edges of the dimensions will have artifacts
-        # as a workaround, exclude these from max computation
-        # if chunk_t is not None and chunk_t > 0:
-        #     exclude_t = int(Nt * chunk_t / nframes)
-        #     exclude_t_slice = slice(exclude_t, Nt - exclude_t)
-        # else:
-        #     exclude_t_slice = slice(None)
-        # if chunk_h is not None and chunk_h > 0:
-        #     exclude_y = int(Ny * chunk_h / binvidH)
-        #     exclude_y_slice = slice(exclude_y, Ny - exclude_y)
-        # else:
-        #     exclude_y_slice = slice(None)
-        # if chunk_w is not None and chunk_w > 0:
-        #     exclude_x = int(Nx * chunk_w / binvidW)
-        #     exclude_x_slice = slice(exclude_x, Nx - exclude_x)
-        # else:
-        #     exclude_x_slice = slice(None)
-        # maxflux = np.max(flux[exclude_t_slice, exclude_y_slice, exclude_x_slice])
         print("calculating flux statistics")
         print(f"flux dtype: {flux.dtype}, max value: {np.max(flux)}, min value: {np.min(flux)}, mean value: {np.mean(flux)}")
         print(f"maxflux (99th percentile): {np.quantile(flux, 0.99)}")
@@ -374,32 +226,30 @@ for dataname in all_datanames:
             gamma=1/2.2,
             playback_fps=30, cmap="grey", vmin=0, vmax=maxflux
         )
-        spvid.write_video(
-            flux,
-            output_dir / f"gamma-viridis.mp4",
-            gamma=1/2.2,
-            playback_fps=30, cmap="viridis", vmin=0, vmax=maxflux
-        )
-        # ihpp_data.to_video(
-        #     flux,
-        #     output_dir / f"flux.mp4",
-        #     gamma=1.0,
-        #     playback_fps=30, cmap="grey", vmin=0, vmax=maxflux
-        # )
-        # takes too damn long to generate, just save pngs after the fact
-        # ihpp_data.to_video(
-        #     flux,
-        #     output_dir / f"gamma",
-        #     gamma=1/2.2,
-        #     cmap="grey", fileformat="png", vmin=0, vmax=maxflux
-        # )
+
+        # fluxes are generally pointless to save because they're too dark to see anything useful
+        if save_flux_vid:
+            spvid.write_video(
+                flux,
+                output_dir / f"flux.mp4",
+                gamma=1.0,
+                playback_fps=30, cmap="grey", vmin=0, vmax=maxflux
+            )
+        # takes a while to generate pngs frames
+        if save_gamma_pngs:
+            spvid.write_video(
+                flux,
+                output_dir / f"gamma",
+                gamma=1/2.2,
+                cmap="grey", fileformat="png", vmin=0, vmax=maxflux
+            )
 
         # zip results to prep for download
-
-        zipoutpath = utils.zip_run(
-            output_dir, ZIP_TRANSFER_DIR, run_id=recon_str_format, append_time=False
-        )
-        logger.info(f"Zipped results to {zipoutpath}")
+        if args.zip:
+            zipoutpath = utils.zip_run(
+                output_dir, ZIP_TRANSFER_DIR, run_id=recon_str_format, append_time=False
+            )
+            logger.info(f"Zipped results to {zipoutpath}")
 
         if keep_prob < 1.0:
             # thinned will be a copy

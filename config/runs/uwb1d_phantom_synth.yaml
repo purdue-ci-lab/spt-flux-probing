@@ -1,0 +1,25 @@
+# Run-parameter config for run_uwb1d_quanta.py.
+# Pair with a data-type config, e.g.:
+#   python run_uwb1d_quanta.py --data-type config/data_types/phantom_synth_128k.yaml \
+#       --run config/runs/uwb1d_phantom_synth.yaml
+output_subdir: results/uwb1d/phantom-synth   # relative to OUTPUT_DIR
+
+datanames:
+  - cerealmilk-fps1000_rife4_linear8_ppp0.1
+  - coffeebeans-fps1000_rife4_linear8_ppp0.1
+  - fireblast-fps1000_rife4_linear8_ppp0.1
+  - grasswaterfall-fps1000_rife4_linear8_ppp0.1
+  - shoewaterstep-fps1000_rife4_linear8_ppp0.1
+  - strawberrymilk-fps1000_rife4_linear8_ppp0.1
+  - waterbubbles-fps1000_rife4_linear8_ppp0.1
+  - wineglassfall-fps1000_rife4_linear8_ppp0.1
+
+target_fps: [128000]
+keep_probs: [1.0, 0.1, 0.02]
+alpha: null
+
+# Time-axis slices: [start, stop] or [start, stop, step]; null = full.
+frame_slice: null                # null = use all source frames
+recon_slice: [null, null, 128]   # null = look up config/recon_slices.yaml, else default cap
+
+max_frames_recon_default: 2000   # cap when recon_slice is unset, to avoid huge outputs

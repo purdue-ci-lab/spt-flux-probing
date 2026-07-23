@@ -1,0 +1,5 @@
+# Data-type config: synthetic cavitation data (phantom-synth), fps from zarr metadata.
+src_H: null
+src_W: null
+src_fps: null          # read from file metadata
+data_subdir: phantom-synth/upsampled

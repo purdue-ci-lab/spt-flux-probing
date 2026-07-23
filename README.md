@@ -21,14 +21,14 @@ Depending on the version, install based on the following:
 
 ```shell
 # For CUDA 12.x
-pip install cupy-cuda12x
+uv pip install cupy-cuda12x
 
 # For CUDA 13.x
-pip install cupy-cuda13x
+uv pip install cupy-cuda13x
 ```
 
 If CUDA Toolkit is not installed on the system, append either of the above with `[ctk]`, e.g.
 
 ```shell
-pip install "cupy-cuda12x[ctk]"
+uv pip install "cupy-cuda12x[ctk]"
 ```

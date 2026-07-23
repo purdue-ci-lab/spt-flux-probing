@@ -1,0 +1,5 @@
+# Data-type config: spike / event camera data (~40k fps).
+src_H: 250
+src_W: 400
+src_fps: 40000
+data_subdir: spike

@@ -1,0 +1,5 @@
+# Data-type config: 10 million fps Phantom camera data.
+src_H: null
+src_W: null
+src_fps: 10000000
+data_subdir: phantom
