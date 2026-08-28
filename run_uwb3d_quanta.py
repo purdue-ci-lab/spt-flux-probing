@@ -88,7 +88,6 @@ chunk_t, chunk_h, chunk_w = window_settings["chunk_t"], window_settings["chunk_h
 hop_t, hop_h, hop_w = window_settings["hop_t"], window_settings["hop_h"], window_settings["hop_w"]
 
 for dataname in all_datanames:
-    # leave without extension to search for the format-agnostic reader in ihpp_data.read_quanta_auto
     quantapath = data_dir / f"{dataname}"
     quantaframes_base, metadata = spio.read_quanta_auto(
         quantapath, load_data=True, H=src_H, W=src_W

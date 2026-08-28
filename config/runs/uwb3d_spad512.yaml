@@ -1,7 +1,7 @@
 # Run-parameter config for run_uwb3d_quanta.py on 100k fps SPAD512 quanta data.
 #   python run_uwb3d_quanta.py --data-type config/data_types/spad512_100k.yaml \
 #       --run config/runs/uwb3d_spad512.yaml
-output_subdir: results/quanta
+output_subdir: results/quanta    # output location relative to config.OUTPUT_DIR
 
 datanames:
   - Feb29_balloonbounce_acq0_2875ppps.zarr

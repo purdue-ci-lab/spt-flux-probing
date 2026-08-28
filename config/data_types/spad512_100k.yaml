@@ -3,4 +3,4 @@
 src_H: 512
 src_W: 512
 src_fps: 100000        # native capture fps (null = read from file metadata)
-data_subdir: quanta    # source location relative to DATA_DIR
+data_subdir: quanta    # source location relative to config.DATA_DIR
