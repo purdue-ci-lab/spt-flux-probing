@@ -1,7 +1,10 @@
 # Run-parameter config for run_uwb3d_quanta.py on synthetic cavitation data.
-# Pairs with cavitation_synth (fps read from zarr metadata).
-#   python run_uwb3d_quanta.py --data-type config/data_types/cavitation_synth.yaml \
-#       --run config/runs/uwb3d_cavitation.yaml
+# Uses cavitation_synth (fps read from zarr metadata).
+#   python run_uwb3d_quanta.py --run config/runs/uwb3d_cavitation.yaml
+
+# Name of a data-type config in config/data_types (without the .yaml extension).
+data_type: cavitation_synth
+
 output_subdir: results/phantom-synth
 
 datanames:

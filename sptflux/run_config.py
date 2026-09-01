@@ -7,7 +7,8 @@ Settings for ``run_uwb3d_quanta.py`` / ``run_uwb1d_quanta.py`` live under
   source data type, e.g. ``src_H``, ``src_W``, ``src_fps`` and ``data_subdir``.
 * run-parameter configs (``config/runs/*.yaml``): choices for a particular run,
   e.g. datanames, target fps, thinning probabilities, frame/recon slices and
-  (3D only) window settings.
+  (3D only) window settings. Each run config names its data type with a
+  ``data_type`` key (the stem of a file in ``config/data_types``).
 * ``config/recon_slices.yaml``: per-dataset reconstruction windows keyed by
   ``(dataname, target_fps)``.
 
@@ -20,12 +21,18 @@ import yaml
 
 _PROJECT_DIR = Path(__file__).parent.parent
 CONFIG_DIR = _PROJECT_DIR / "config"
+DATA_TYPES_DIR = CONFIG_DIR / "data_types"
 DEFAULT_RECON_SLICES = CONFIG_DIR / "recon_slices.yaml"
 
 
 def load_yaml(path):
     with open(path, "r") as f:
         return yaml.safe_load(f)
+
+
+def load_data_type(name):
+    """Load the data-type config named by a run config's ``data_type`` key."""
+    return load_yaml(DATA_TYPES_DIR / f"{name}.yaml")
 
 
 def parse_slice(spec):

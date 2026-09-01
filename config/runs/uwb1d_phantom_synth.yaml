@@ -1,7 +1,9 @@
 # Run-parameter config for run_uwb1d_quanta.py.
-# Pair with a data-type config, e.g.:
-#   python run_uwb1d_quanta.py --data-type config/data_types/phantom_synth_128k.yaml \
-#       --run config/runs/uwb1d_phantom_synth.yaml
+#   python run_uwb1d_quanta.py --run config/runs/uwb1d_phantom_synth.yaml
+
+# Name of a data-type config in config/data_types (without the .yaml extension).
+data_type: phantom_synth_128k
+
 output_subdir: results/uwb1d/phantom-synth   # relative to OUTPUT_DIR
 
 datanames:

@@ -1,5 +1,6 @@
 # Data-type config: 100k fps quanta data from the SPAD512.
 # Intrinsic properties shared by all data of this type.
+# Selected by name (this file's stem) from a run config's `data_type` key.
 src_H: 512
 src_W: 512
 src_fps: 100000        # native capture fps (null = read from file metadata)

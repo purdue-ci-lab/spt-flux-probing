@@ -1,4 +1,5 @@
 # Data-type config: 10 million fps Phantom camera data.
+# Selected by name (this file's stem) from a run config's `data_type` key.
 src_H: null
 src_W: null
 src_fps: 10000000

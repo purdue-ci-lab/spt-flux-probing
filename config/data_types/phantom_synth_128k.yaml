@@ -1,4 +1,5 @@
 # Data-type config: 128k fps upsampled synthetic quanta data (phantom-synth).
+# Selected by name (this file's stem) from a run config's `data_type` key.
 src_H: 256
 src_W: 512
 src_fps: 128000

@@ -1,6 +1,9 @@
 # Run-parameter config for run_uwb3d_quanta.py on spike / event-camera data.
-#   python run_uwb3d_quanta.py --data-type config/data_types/spike_40k.yaml \
-#       --run config/runs/uwb3d_spike.yaml
+#   python run_uwb3d_quanta.py --run config/runs/uwb3d_spike.yaml
+
+# Name of a data-type config in config/data_types (without the .yaml extension).
+data_type: spike_40k
+
 output_subdir: results/spike
 
 datanames:

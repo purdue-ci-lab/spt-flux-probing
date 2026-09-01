@@ -19,8 +19,6 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Windowed spatiotemporal flux probing with via STFT for quanta videos."
     )
-    parser.add_argument("--data-type", required=True,
-                        help="Path to a data-type YAML (config/data_types/*.yaml).")
     parser.add_argument("--run", required=True,
                         help="Path to a run-parameter YAML (config/runs/*.yaml).")
     parser.add_argument("--recon-slices", default=str(run_config.DEFAULT_RECON_SLICES),
@@ -59,8 +57,8 @@ if use_cuda:
         logger.warning(f"CUDA requested but unavailable ({e}); falling back to CPU.")
         use_cuda = False
 
-data_type = run_config.load_yaml(args.data_type)
 run = run_config.load_yaml(args.run)
+data_type = run_config.load_data_type(run["data_type"])
 recon_slices = run_config.load_recon_slices(args.recon_slices)
 
 src_H = data_type["src_H"]
@@ -89,6 +87,8 @@ hop_t, hop_h, hop_w = window_settings["hop_t"], window_settings["hop_h"], window
 
 for dataname in all_datanames:
     quantapath = data_dir / f"{dataname}"
+    # strip extension (handles .zarr, ignores dirs)
+    dataname = utils.get_path_stem(quantapath)
     quantaframes_base, metadata = spio.read_quanta_auto(
         quantapath, load_data=True, H=src_H, W=src_W
     )  # shape: (T, H, W)

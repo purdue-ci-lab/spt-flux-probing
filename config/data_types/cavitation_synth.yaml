@@ -1,4 +1,5 @@
 # Data-type config: synthetic cavitation data (phantom-synth), fps from zarr metadata.
+# Selected by name (this file's stem) from a run config's `data_type` key.
 src_H: null
 src_W: null
 src_fps: null          # read from file metadata

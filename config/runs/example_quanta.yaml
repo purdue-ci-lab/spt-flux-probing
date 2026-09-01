@@ -1,9 +1,11 @@
 # Example run-parameter config for run_uwb3d_quanta.py.
-#   python run_uwb3d_quanta.py --data-type config/data_types/spad512_100k.yaml \
-#       --run config/runs/uwb3d_spad512.yaml
+#   python run_uwb3d_quanta.py --run config/runs/uwb3d_spad512.yaml
 # or uv run also works
-#   uv run run_uwb3d_quanta.py --data-type config/data_types/spad512_100k.yaml \
-#       --run config/runs/uwb3d_spad512.yaml
+#   uv run run_uwb3d_quanta.py --run config/runs/uwb3d_spad512.yaml
+
+# Name of a data-type config in config/data_types (without the .yaml extension).
+data_type: spad512_100k
+
 output_subdir: results/quanta    # output location relative to config.OUTPUT_DIR
 
 # List of datasets to run on. Paths are resolved like config.DATA_DIR / data_subdir / dataname.

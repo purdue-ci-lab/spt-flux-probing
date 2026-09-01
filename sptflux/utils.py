@@ -70,6 +70,20 @@ class TempMemmap:
         self.close()
 
 
+def get_path_stem(path: str | Path):
+    """
+    Path().stem except it checks zarr too to ignore the extension.
+    Since zarr is a directory, and for all other directories you don't
+    usually want to drop suffixes.
+    """
+    path = Path(path)
+    if path.is_file():
+        return path.stem
+    if path.is_dir() and path.suffix == ".zarr":
+        return path.stem
+    return path.name
+
+
 def zip_run(results_dir: str, out_dir: str, run_id: str | None = None, append_time=True) -> Path:
     """
     Zip up a results folder.
