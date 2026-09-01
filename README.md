@@ -158,7 +158,41 @@ uv run uwbfan_recon.py
 
 ### Velocity-selective videography
 
-TODO Teo write this pls.
+For scenes with multiple objects moving at different constant velocities (e.g. a plucked guitar string, a fired bullet), simply summing photons over a long exposure smears everything into motion blur. Since a rigidly-translating object's power in the 3D spatiotemporal Fourier transform `F(ft, fy, fx)` of the quanta video lies on a tilted plane (`ft + vx*fx + vy*fy ≈ 0`), we can probe for a velocity `(vx, vy)` by measuring energy along that plane, and reconstruct a sharp, motion-compensated image/video for a specific velocity by deshearing the spectrum before taking the temporal DC slice. This lets us isolate and bring into focus only the content moving at a chosen velocity, while unrelated motion is blurred out.
+
+This is a two-stage workflow:
+
+**1. Detect velocities present in the scene** ([`detect_motion.py`](detect_motion.py))
+
+Given a spatiotemporal patch of the video, this computes the 3D FFT, evaluates energy along candidate velocity planes over a `(vx, vy)` grid, and runs 2D CFAR detection to find which velocities have significant energy above the noise floor. It saves an energy heatmap (`*_2d_energies.svg`) and a detections plot (`*_2d_detections.svg`).
+
+```shell
+uv run detect_motion.py --config motion_compensation_runs/compensate_guitar.yaml -v
+```
+
+Pass `-c`/`--compensate_motion` to additionally motion-compensate the patch at each detected velocity (deshear + inverse FFT), producing a stabilized PNG and an original-vs-compensated comparison SVG per detected `(vx, vy)`:
+
+```shell
+uv run detect_motion.py --config motion_compensation_runs/compensate_guitar.yaml -c -v
+```
+
+Useful flags: `-t/--thin` to subsample photon arrivals before analysis, `-d/--detection_cuts vx_min vx_max vy_min vy_max` to crop the detection plot to a velocity region of interest, `-m/--marker_size` for detection marker size (plot styling).
+
+**2. Render a velocity-selective video** ([`motion_compensate_video.py`](motion_compensate_video.py))
+
+Once you know a velocity of interest (from step 1, or by hand), this slides a temporal window across the full sequence and motion-compensates each window at that fixed `(vx, vy)`, writing out a stabilized `.mp4` where content moving at that velocity stays sharp:
+
+```shell
+uv run motion_compensate_video.py --config motion_compensation_runs/compensate_guitar.yaml --vx 0.05 --vy 0.0 --window 3000 --skip 10 --fps_out 30
+```
+
+- `--window` overrides the config's `temporal_size` (frames per compensated output frame).
+- `--skip` controls the stride between windows (i.e. how many input frames advance per output frame).
+- `-t/--thin` subsamples events the same way as `detect_motion.py`.
+
+Both scripts use CUDA via torch when available (tiled to limit VRAM use) and fall back to a NumPy CPU path otherwise.
+
+**Configuration**: Run configs live in [`motion_compensation_runs/`](motion_compensation_runs) (e.g. `compensate_guitar.yaml`, `compensate_gun.yaml`, `compensate_baloon_bullet.yaml`). Each config specifies `data` (path, type, `T_exp`, frame count, resolution, frame `slice`, and `velocity_bounds: [vmin, vmax, n]` in px/frame), `window_settings` (spatial `window_size`/`window_stride` and `temporal_size` for patch extraction, plus which `patch_num` to analyze), and `output` (base path and filename templates).
 
 ### Event camera videography
 
