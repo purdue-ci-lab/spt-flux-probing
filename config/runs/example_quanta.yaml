@@ -20,6 +20,11 @@ keep_probs: [1.0, 0.1]           # the fraction of photons to keep (1.0 = all, 0
 
 alpha: 1.0e-4
 
+# Correct hot pixels on the source frames before reconstruction.
+# Normally the data should already be corrected since it takes a while to correct,
+# so if your data is already preprocessed, set this to false.
+hotpixel_correction: false
+
 frame_slice: [null, null, null]
 recon_slice: null                # look up config/recon_slices.yaml, else default cap
 

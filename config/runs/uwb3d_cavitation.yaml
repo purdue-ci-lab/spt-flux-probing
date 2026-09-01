@@ -17,6 +17,10 @@ target_fps: [100000]
 keep_probs: [1.0]
 alpha: 1.0e-3
 
+# Correct hot pixels on the source frames before reconstruction.
+# Data converted with data_convert.ipynb is already corrected, so this is normally false.
+hotpixel_correction: false
+
 frame_slice: null
 recon_slice: [null, null]        # full reconstruction (do not look up per-dataset slice)
 

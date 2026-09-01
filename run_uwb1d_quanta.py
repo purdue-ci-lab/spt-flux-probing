@@ -69,6 +69,7 @@ all_datanames = run["datanames"]
 all_target_fps = run["target_fps"]
 all_keepprobs = run["keep_probs"]
 alpha = run["alpha"]
+hotpixel_correction = run["hotpixel_correction"]
 frame_slice = run_config.as_txy_slice(run_config.parse_slice(run["frame_slice"]))
 recon_slice_run = run_config.parse_slice(run["recon_slice"])
 max_frames_recon_default = run["max_frames_recon_default"]  # avoid accidental 50+ GB outputs
@@ -81,6 +82,9 @@ for dataname in all_datanames:
     quantaframes_base, metadata = spio.read_quanta_auto(quantapath, H=src_H, W=src_W)  # shape: (T, H, W)
     if frame_slice is not None:
         quantaframes_base = quantaframes_base[frame_slice]
+    if hotpixel_correction:
+        logger.info(f"Correcting hot pixels for {dataname}")
+        quantaframes_base = spproc.correct_hotpixels(quantaframes_base)
     nframes = quantaframes_base.shape[0]
     Ny, Nx = quantaframes_base.shape[1], quantaframes_base.shape[2]
     binvidT, binvidH, binvidW = quantaframes_base.shape
@@ -157,6 +161,7 @@ for dataname in all_datanames:
             "target_fps": target_fps,
             "keep_prob": keep_prob,
             "alpha": alpha_vid,
+            "hotpixel_correction": hotpixel_correction,
             "nframes_total": Nt,
             "nframes_recon": flux.shape[0],
             "frame_start": recon_slice_vid.start if recon_slice_vid is not None else 0,

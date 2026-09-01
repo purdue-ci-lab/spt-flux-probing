@@ -71,6 +71,7 @@ all_datanames = run["datanames"]
 all_target_fps = run["target_fps"]
 all_keepprobs = run["keep_probs"]
 alpha = run["alpha"]
+hotpixel_correction = run["hotpixel_correction"]
 frame_slice = run_config.as_txy_slice(run_config.parse_slice(run["frame_slice"]))
 recon_slice_run = run_config.parse_slice(run["recon_slice"])
 window = run["window"]
@@ -100,6 +101,9 @@ for dataname in all_datanames:
         quantaframes_base = quantaframes_base[frame_slice]
         frameslice_tstep = frame_slice[0].step if frame_slice[0].step is not None else 1
         fps_vid = fps_vid // frameslice_tstep
+    if hotpixel_correction:
+        logger.info(f"Correcting hot pixels for {dataname}")
+        quantaframes_base = spproc.correct_hotpixels(quantaframes_base)
 
     nframes = quantaframes_base.shape[0]
     Ny, Nx = quantaframes_base.shape[1], quantaframes_base.shape[2]
@@ -193,6 +197,7 @@ for dataname in all_datanames:
             "target_fps": target_fps,
             "keep_prob": keep_prob,
             "alpha": alpha_vid,
+            "hotpixel_correction": hotpixel_correction,
             "window": window,
             "nframes_total": Nt,
             "nframes_recon": flux.shape[0],

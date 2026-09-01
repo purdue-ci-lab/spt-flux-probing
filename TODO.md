@@ -2,8 +2,8 @@
 
 ## General code stuff to do
 
-- have claude make the event notebook into something way less of a mess
-- standalong example script for continuous data
+- have claude make the event notebook into something way less of a mess (I've decided I'm not doing this)
+- ~~standalong example script for continuous data~~
 - ~~fix the filename reading inconsistencies with the quanta script~~
 - ~~verify if a STFT dimension is unwindowed the script still works~~
 - ~~fix `data_convert.ipynb` (turn into script or something else)~~
@@ -13,7 +13,7 @@
 
 ## README stuff to do
 
-- complete setup instructions with the path config, installation, etc
+- ~~complete setup instructions with the path config, installation, etc~~
 - add links to data, project website
-- quanta config information and running
-- running on continuous data
+- ~~quanta config information and running~~
+- ~~running on continuous data~~
