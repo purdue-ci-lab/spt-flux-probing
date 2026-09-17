@@ -77,9 +77,8 @@ max_frames_recon_default = run["max_frames_recon_default"]  # avoid accidental 5
 ZIP_TRANSFER_DIR = OUTPUT_DIR / "zipresults"
 
 for dataname in all_datanames:
-    # leave without extension to search for the format-agnostic reader in ihpp_data.read_quanta_auto
     quantapath = data_dir / f"{dataname}"
-    quantaframes_base, metadata = spio.read_quanta_auto(quantapath, H=src_H, W=src_W)  # shape: (T, H, W)
+    quantaframes_base, metadata = spio.read_quanta_auto(quantapath, load_data=True, H=src_H, W=src_W)  # shape: (T, H, W)
     if frame_slice is not None:
         quantaframes_base = quantaframes_base[frame_slice]
     if hotpixel_correction:

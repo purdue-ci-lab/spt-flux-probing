@@ -110,7 +110,7 @@ def load_video_from_cfg(cfg: dict, log: logging.Logger) -> np.ndarray:
     t0 = time.perf_counter()
     if typ == "zarr":
         log.info("Loading zarr: %s", path)
-        spadbinframes, _, _ = read_quanta_zarr(path)
+        spadbinframes = read_quanta_zarr(path, load_data=True)
     else:
         log.info("Loading bin: %s", path)
         spadbinframes = read_spadbin(

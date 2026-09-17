@@ -237,7 +237,7 @@ def bin_photon_stream(tt, dt):
 # downstream needs nothing but three 1D arrays of photon coordinates, e.g.
 #
 #     from spadlib.io import read_async_spad_zarr
-#     (t_ev, y_ev, x_ev), _, _ = read_async_spad_zarr(data_folder / "R.zarr", load_data=True)
+#     (t_ev, y_ev, x_ev), _ = read_async_spad_zarr(data_folder / "R.zarr", load_data=True)
 #     t_ev, y_ev, x_ev = t_ev / T_exp, y_ev / src_H, x_ev / src_W
 #
 # as in `uwbfan_forward.py`. THE COORDINATES MUST BE NORMALIZED TO [0, 1]: divide

@@ -60,9 +60,9 @@ V = src_W * src_H * T_exp
 # points_b, _ = ihpp_data.read_spadfolder(data_folder / "B", h=src_H, w=src_W, T_exp=T_exp, normalize=True)
 # t_b, y_b, x_b = points_b[:, 0], points_b[:, 1], points_b[:, 2]
 
-(t_r, y_r, x_r), pix_ts_r, _ = read_async_spad_zarr(data_folder / "R.zarr", load_data=True)
-(t_g, y_g, x_g), pix_ts_g, _ = read_async_spad_zarr(data_folder / "G.zarr", load_data=True)
-(t_b, y_b, x_b), pix_ts_b, _ = read_async_spad_zarr(data_folder / "B.zarr", load_data=True)
+(t_r, y_r, x_r), pix_ts_r = read_async_spad_zarr(data_folder / "R.zarr", load_data=True)
+(t_g, y_g, x_g), pix_ts_g = read_async_spad_zarr(data_folder / "G.zarr", load_data=True)
+(t_b, y_b, x_b), pix_ts_b = read_async_spad_zarr(data_folder / "B.zarr", load_data=True)
 
 if keep_prob < 1.0:
     print(f"original red count: {t_r.size}")

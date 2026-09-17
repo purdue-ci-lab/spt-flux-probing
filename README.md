@@ -158,6 +158,13 @@ uv run uwbfan_recon.py
 
 ### Velocity-selective videography
 
+**IMPORTANT NOTE**: Velocity-selective videography requires PyTorch.
+Since PyTorch plays poorly with the fiNUFFT library on MacBooks, we prefer to install torch separately:
+
+```shell
+uv pip install torch torchvision --index-url https://download.pytorch.org/whl/replace_with_cu_version
+```
+
 For scenes with multiple objects moving at different constant velocities (e.g. a plucked guitar string, a fired bullet), simply summing photons over a long exposure smears everything into motion blur. Since a rigidly-translating object's power in the 3D spatiotemporal Fourier transform `F(ft, fy, fx)` of the quanta video lies on a tilted plane (`ft + vx*fx + vy*fy ≈ 0`), we can probe for a velocity `(vx, vy)` by measuring energy along that plane, and reconstruct a sharp, motion-compensated image/video for a specific velocity by deshearing the spectrum before taking the temporal DC slice. This lets us isolate and bring into focus only the content moving at a chosen velocity, while unrelated motion is blurred out.
 
 This is a two-stage workflow:
@@ -196,4 +203,4 @@ Both scripts use CUDA via torch when available (tiled to limit VRAM use) and fal
 
 ### Event camera videography
 
-The code for event camera videography is in [`scratch_event.ipynb`](scratch_event.ipynb). The code is a complete mess and requires a lot of manual changes per dataset. I do not plan to clean up this code, but if you really need a more usable version of this code, you can contact me. Alternatively, Claude can probably(?) make some sense of it.
+The code for event camera videography is in [`scratch_event.ipynb`](scratch_event.ipynb). The code is a complete mess and requires a lot of manual changes per dataset. I do not plan to clean up this code, but if you really need a more usable version of this code, you can open an issue. Alternatively, Claude can probably(?) make some sense of it.

@@ -243,7 +243,7 @@ def main():
 
     log.info("Loading the binary video from %s", bin_path)
     if type == "zarr":
-        spadbinframes, _, _ = read_quanta_zarr(bin_path)
+        spadbinframes = read_quanta_zarr(bin_path, load_data=True)
     else:
         spadbinframes = read_spadbin(bin_path,nframes=slice_end,h=Y_res,w=X_res,downsample=int(512 // X_res),keep_prob=1.0,hotpix_thresh=3.0)
     log.info("Loaded spadbinframes shape: %s", spadbinframes.shape)
