@@ -91,7 +91,7 @@ for dataname in all_datanames:
     # strip extension (handles .zarr, ignores dirs)
     dataname = utils.get_path_stem(quantapath)
     quantaframes_base, metadata = spio.read_quanta_auto(
-        quantapath, load_data=True, H=src_H, W=src_W
+        quantapath, load_data=True, H=src_H, W=src_W, return_meta=True
     )  # shape: (T, H, W)
     if metadata is not None:
         fps_vid = metadata.get("fps", src_fps)

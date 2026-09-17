@@ -78,7 +78,7 @@ ZIP_TRANSFER_DIR = OUTPUT_DIR / "zipresults"
 
 for dataname in all_datanames:
     quantapath = data_dir / f"{dataname}"
-    quantaframes_base, metadata = spio.read_quanta_auto(quantapath, load_data=True, H=src_H, W=src_W)  # shape: (T, H, W)
+    quantaframes_base, metadata = spio.read_quanta_auto(quantapath, load_data=True, H=src_H, W=src_W, return_meta=True)  # shape: (T, H, W)
     if frame_slice is not None:
         quantaframes_base = quantaframes_base[frame_slice]
     if hotpixel_correction:
