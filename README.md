@@ -135,7 +135,13 @@ If you have enough VRAM on your GPU, exclude the arguments `--no-vram-frames` or
 
 By default, this will only output `gamma.mp4` (reconstruction with a gamma correction of 2.2) and `reconinfo.zarr` (full float array of output flux).
 
-### Asynchonrous SPAD and ultra-wideband videography
+### Asynchronous SPAD and ultra-wideband videography
+
+**Note**: For GPU acceleration of asynchronous timestamped data, install cuFINUFFT.
+
+```shell
+uv pip install cufinufft
+```
 
 Since timestamping SPAD arrays record picosecond-resolution timestamps and not frames, we treat their data as a 3D point cloud of continuous-position photons instead.
 
@@ -159,7 +165,7 @@ uv run uwbfan_recon.py
 ### Velocity-selective videography
 
 **IMPORTANT NOTE**: Velocity-selective videography requires PyTorch.
-Since PyTorch plays poorly with the fiNUFFT library on MacBooks, we prefer to install torch separately:
+Since PyTorch plays poorly with the FINUFFT library on MacBooks, we prefer to install torch separately:
 
 ```shell
 uv pip install torch torchvision --index-url https://download.pytorch.org/whl/replace_with_cu_version
