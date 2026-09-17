@@ -12,7 +12,7 @@ def load_path_config():
     config_path = project_dir / "config" / "paths.yaml"
     default_config_path = project_dir / "config" / "default_paths.yaml"
     if not config_path.is_file():
-        warnings.warn(f"Path config file not found: {config_path}, using default path config {default_config_path}\nMake a sure to create your own config/paths.yaml for local paths.")
+        warnings.warn(f"Path config file not found: {config_path}, using default path config {default_config_path}\nMake sure to create your own config/paths.yaml for local paths.")
         config_path = default_config_path
     with open(default_config_path, "r") as f:
         default_config = yaml.safe_load(f)
