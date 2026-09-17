@@ -70,7 +70,8 @@ all_target_fps = run["target_fps"]
 all_keepprobs = run["keep_probs"]
 alpha = run["alpha"]
 hotpixel_correction = run["hotpixel_correction"]
-frame_slice = run_config.as_txy_slice(run_config.parse_slice(run["frame_slice"]))
+frame_slice = run_config.parse_slice(run["frame_slice"])
+framestr = run_config.frame_slice_name(frame_slice)  # "" when nothing is sliced
 recon_slice_run = run_config.parse_slice(run["recon_slice"])
 max_frames_recon_default = run["max_frames_recon_default"]  # avoid accidental 50+ GB outputs
 
@@ -78,7 +79,11 @@ ZIP_TRANSFER_DIR = OUTPUT_DIR / "zipresults"
 
 for dataname in all_datanames:
     quantapath = data_dir / f"{dataname}"
-    quantaframes_base, metadata = spio.read_quanta_auto(quantapath, load_data=True, H=src_H, W=src_W, return_meta=True)  # shape: (T, H, W)
+    # strip extension (handles .zarr, ignores dirs)
+    dataname = utils.get_path_stem(quantapath)
+    quantaframes_base, metadata = spio.read_quanta_auto(
+        quantapath, load_data=True, H=src_H, W=src_W, return_meta=True
+    )  # shape: (T, H, W)
     if frame_slice is not None:
         quantaframes_base = quantaframes_base[frame_slice]
     if hotpixel_correction:
@@ -102,24 +107,26 @@ for dataname in all_datanames:
         elif (dataname, target_fps) in recon_slices:
             recon_slice_vid = recon_slices[(dataname, target_fps)]
         elif Nt > max_frames_recon_default:
-            recon_slice_vid = slice(0, max_frames_recon_default)
+            recon_slice_vid = run_config.parse_slice(f"0:{max_frames_recon_default}")
         else:
             recon_slice_vid = None
+        recon_t_slice = recon_slice_vid[0] if recon_slice_vid is not None else None
         logger.info(f"Starting 1D UWB for {dataname} with keep_prob={keep_prob} and target_fps={target_fps}")
         playfps = int(round(Nt / T_exp))
         alphastr = "None" if alpha_vid is None else f"{alpha_vid:.5f}"
         if recon_slice_vid is None:
             slicestr = "slicefull"
         else:
-            if recon_slice_vid.step is not None and recon_slice_vid.step != 1:
-                slicestr = f"slice{recon_slice_vid.start}_{recon_slice_vid.stop}_step{recon_slice_vid.step}"
+            if recon_t_slice.step is not None and recon_t_slice.step != 1:
+                slicestr = f"slice{recon_t_slice.start}_{recon_t_slice.stop}_step{recon_t_slice.step}"
             else:
-                slicestr = f"slice{recon_slice_vid.start}_{recon_slice_vid.stop}"
-        recon_str_format = "-".join([
-            "uwb1d", f"{dataname}", slicestr,
+                slicestr = f"slice{recon_t_slice.start}_{recon_t_slice.stop}"
+            slicestr += run_config.hw_slice_name(recon_slice_vid)
+        recon_str_format = "-".join(part for part in [
+            "uwb1d", f"{dataname}", framestr, slicestr,
             f"bins{Nt}x{Ny}x{Nx}", f"keep{keep_prob:.3f}", f"playfps{playfps}",
             f"alpha{alphastr}"
-        ])
+        ] if part)
         output_dir: Path = output_parent_dir / dataname / f"thin{keep_prob:.3f}" / f"fps{playfps}" / recon_str_format
         output_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Output directory: {output_dir}")
@@ -131,11 +138,18 @@ for dataname in all_datanames:
         else:
             quantaframes = quantaframes_base
 
+        if recon_slice_vid is None:
+            recon_frames = quantaframes
+        else:
+            # uwb1d reconstructs each pixel independently, so cropping the input to the
+            # recon region gives the same result without computing discarded pixels
+            recon_frames = quantaframes[:, recon_slice_vid[1], recon_slice_vid[2]]
+
         t0 = time.time()
         flux = flux_probing.uwb1d_quanta(
-            quantaframes,
+            recon_frames,
             Nt=Nt,
-            recon_slice=recon_slice_vid,
+            recon_slice=recon_t_slice,
             T_exp=T_exp, alpha=alpha_vid,
             cuda=use_cuda,
             load_frames_on_vram=load_frames_on_vram, load_output_on_vram=load_output_on_vram
@@ -150,7 +164,7 @@ for dataname in all_datanames:
         flux_to_save = np.asarray(flux, dtype="float32")
 
         framenum_all = np.arange(0, Nt)
-        framenum_slice = framenum_all if recon_slice_vid is None else framenum_all[recon_slice_vid]
+        framenum_slice = framenum_all if recon_slice_vid is None else framenum_all[recon_t_slice]
         reconinfo = {
             "flux": flux_to_save,
             "framenums": framenum_slice
@@ -163,9 +177,9 @@ for dataname in all_datanames:
             "hotpixel_correction": hotpixel_correction,
             "nframes_total": Nt,
             "nframes_recon": flux.shape[0],
-            "frame_start": recon_slice_vid.start if recon_slice_vid is not None else 0,
-            "frame_end": recon_slice_vid.stop if recon_slice_vid is not None else Nt,
-            "frame_step": recon_slice_vid.step if recon_slice_vid is not None else 1,
+            # (t, y, x) colon strings, as written in the run configs
+            "frame_slice": run_config.slice_strs(frame_slice),
+            "recon_slice": run_config.slice_strs(recon_slice_vid),
         }
         print("calculating flux statistics")
         print(f"flux dtype: {flux.dtype}, max value: {np.max(flux)}, min value: {np.min(flux)}, mean value: {np.mean(flux)}")
@@ -215,6 +229,7 @@ for dataname in all_datanames:
             logger.info(f"Zipped results to {zipoutpath}")
 
         del flux, flux_to_save, reconinfo
+        del recon_frames
         if keep_prob < 1.0:
             del quantaframes
 

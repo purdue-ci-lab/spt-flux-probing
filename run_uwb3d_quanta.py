@@ -72,7 +72,8 @@ all_target_fps = run["target_fps"]
 all_keepprobs = run["keep_probs"]
 alpha = run["alpha"]
 hotpixel_correction = run["hotpixel_correction"]
-frame_slice = run_config.as_txy_slice(run_config.parse_slice(run["frame_slice"]))
+frame_slice = run_config.parse_slice(run["frame_slice"])
+framestr = run_config.frame_slice_name(frame_slice)  # "" when nothing is sliced
 recon_slice_run = run_config.parse_slice(run["recon_slice"])
 window = run["window"]
 window_kwargs = run["window_kwargs"]
@@ -117,11 +118,11 @@ for dataname in all_datanames:
         Nt = int(nframes * target_fps / fps_vid)
         recon_shape = (Nt, Ny, Nx)
         if recon_slice_run is not None:
-            recon_slice_vid = run_config.as_txy_slice(recon_slice_run)
+            recon_slice_vid = recon_slice_run
         elif (dataname, target_fps) in recon_slices:
-            recon_slice_vid = run_config.as_txy_slice(recon_slices[(dataname, target_fps)])
+            recon_slice_vid = recon_slices[(dataname, target_fps)]
         elif Nt > max_frames_recon_default:
-            recon_slice_vid = run_config.as_txy_slice(slice(0, max_frames_recon_default))
+            recon_slice_vid = run_config.parse_slice(f"0:{max_frames_recon_default}")
         else:
             recon_slice_vid = None
         logger.info(f"Starting STFT for {dataname} with keep_prob={keep_prob} and target_fps={target_fps}")
@@ -135,12 +136,13 @@ for dataname in all_datanames:
                 slicestr = f"slice{s0.start}_{s0.stop}_{s0.step}"
             else:
                 slicestr = f"slice{s0.start}_{s0.stop}"
+            slicestr += run_config.hw_slice_name(recon_slice_vid)
 
-        recon_str_format = "-".join([
-            f"{dataname}", slicestr, f"chunks{chunk_t}x{chunk_h}x{chunk_w}",
+        recon_str_format = "-".join(part for part in [
+            f"{dataname}", framestr, slicestr, f"chunks{chunk_t}x{chunk_h}x{chunk_w}",
             f"hops{hop_t}x{hop_h}x{hop_w}", f"bins{Nt}x{Ny}x{Nx}", f"keep{keep_prob:.3f}", f"playfps{playfps}",
             f"window_{window}", f"alpha{alphastr}"
-        ])
+        ] if part)
         output_dir: Path = output_parent_dir / dataname / f"thin{keep_prob:.3f}" / f"fps{playfps}" / recon_str_format
         output_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Output directory: {output_dir}")
@@ -201,9 +203,9 @@ for dataname in all_datanames:
             "window": window,
             "nframes_total": Nt,
             "nframes_recon": flux.shape[0],
-            "frame_start": recon_slice_vid[0].start if recon_slice_vid is not None else 0,
-            "frame_end": recon_slice_vid[0].stop if recon_slice_vid is not None else Nt,
-            "frame_step": recon_slice_vid[0].step if recon_slice_vid is not None else 1,
+            # (t, y, x) colon strings, as written in the run configs
+            "frame_slice": run_config.slice_strs(frame_slice),
+            "recon_slice": run_config.slice_strs(recon_slice_vid),
         }
         print("calculating flux statistics")
         print(f"flux dtype: {flux.dtype}, max value: {np.max(flux)}, min value: {np.min(flux)}, mean value: {np.mean(flux)}")

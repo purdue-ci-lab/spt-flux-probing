@@ -15,10 +15,11 @@ keep_probs: [1.0, 0.1]
 alpha: 1.0e-4
 
 # Correct hot pixels on the source frames before reconstruction.
-# Data converted with data_convert.ipynb is already corrected, so this is normally false.
 hotpixel_correction: false
 
-frame_slice: [null, null, null]
+# Slices are "start:stop" or "start:stop:step" strings; a ["t", "y", "x"] list
+# slices all three dimensions (e.g. ["0:1000", "100:400", ":"]). null = no slice.
+frame_slice: ":"
 recon_slice: null                # look up config/recon_slices.yaml, else default cap
 
 window: hann

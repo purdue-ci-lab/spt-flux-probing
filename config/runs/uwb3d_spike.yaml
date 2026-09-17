@@ -17,6 +17,8 @@ alpha: 1.0e-4
 # Data converted with data_convert.ipynb is already corrected, so this is normally false.
 hotpixel_correction: false
 
+# Slices are "start:stop" or "start:stop:step" strings; a ["t", "y", "x"] list
+# slices all three dimensions (e.g. ["0:1000", "100:400", ":"]). null = no slice.
 frame_slice: null
 recon_slice: null
 
