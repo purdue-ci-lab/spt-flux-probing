@@ -36,6 +36,8 @@ def parse_args():
                         help="Also save a video of the flux (default: only save gamma-corrected video).")
     parser.add_argument("--save-gamma-pngs", action="store_true",
                         help="Also save a folder of gamma-corrected PNGs (default: only save video).")
+    parser.add_argument("--save-flux-pngs", action="store_true",
+                        help="Also save a folder of flux PNGs (no gamma correction).")
     return parser.parse_args()
 
 
@@ -45,6 +47,7 @@ load_frames_on_vram = args.load_frames_on_vram
 load_output_on_vram = args.load_output_on_vram
 save_flux_vid = args.save_flux_vid
 save_gamma_pngs = args.save_gamma_pngs
+save_flux_pngs = args.save_flux_pngs
 if use_cuda:
     try:
         import cupy as cp
@@ -219,6 +222,13 @@ for dataname in all_datanames:
                 flux,
                 output_dir / f"gamma",
                 gamma=1/2.2,
+                cmap="grey", fileformat="png", vmin=0, vmax=maxflux
+            )
+        if save_flux_pngs:
+            spvid.write_video(
+                flux,
+                output_dir / f"flux",
+                gamma=1.0,
                 cmap="grey", fileformat="png", vmin=0, vmax=maxflux
             )
 
