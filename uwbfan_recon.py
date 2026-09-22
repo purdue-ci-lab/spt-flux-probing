@@ -38,7 +38,7 @@ ft_range_max = 10000
 xx = np.linspace(0, 1, Nx, endpoint=False)
 yy = np.linspace(0, 1, Ny, endpoint=False)
 
-output_parent = config.OUTPUT_DIR / Path("results/async-spad/AC_fan/tmp/spadfan-thin0.033-freqharmx45x69-alpha0.00001")
+output_parent = config.OUTPUT_DIR / Path("results/async-spad/AC_fan/spadfan-thin0.033-freqharmx45x69-alpha0.00001")
 freqinfo_r = np.load(output_parent / "freqinfo-r.npz")
 F_r = freqinfo_r["F"]
 ft_r = freqinfo_r["ft"]

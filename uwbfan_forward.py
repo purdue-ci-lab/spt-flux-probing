@@ -25,7 +25,7 @@ chunk_size = 100_000_000
 ft_range_max = 10_000
 
 # filepaths
-output_parent = config.OUTPUT_DIR / "results/async-spad/AC_fan/tmp"
+output_parent = config.OUTPUT_DIR / "results/async-spad/AC_fan"
 data_folder = config.DATA_DIR / "async-spad/AC_fan"
 
 alpha = 0.00001
