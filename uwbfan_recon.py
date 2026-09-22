@@ -18,14 +18,14 @@ if cuda:
     cp.cuda.runtime.setDevice(device)
 T_exp = 0.1
 # 200 GHz may need more than 1k frames to capture full transient
-# all_fps =     [300, 1_000, 2_000, 10_000, 100_000, 200_000, 30_000_000, 40_000_000, 200_000_000, 10_000_000_000, 30_000_000_000, 199_994_400_000]
-# all_nframes = [30,  100,   200,   1000,   1000,    1000,    1000,       1000,       1000,        1000,           1000,           1000]
-# all_tstart =  [0,   0,     0,     0,      0,       0,       0,          0,          0,           0,              0,              0.03000004160118163]
-# all_eps =     [1e-6, 1e-6, 1e-6,  1e-6,   1e-6,    1e-6,    1e-9,       1e-9,       1e-9,        1e-12,          1e-12,          1e-12]
-all_fps =     [100_000]
-all_nframes = [1000]
-all_tstart =  [0.03000004160118163]
-all_eps =     [1e-6]
+all_fps =     [300, 1_000, 2_000, 10_000, 100_000, 200_000, 30_000_000, 40_000_000, 200_000_000, 10_000_000_000, 30_000_000_000, 199_994_400_000]
+all_nframes = [30,  100,   200,   1000,   1000,    1000,    1000,       1000,       1000,        1000,           1000,           1000]
+all_tstart =  [0,   0,     0,     0,      0,       0,       0,          0,          0,           0,              0,              0.03000004160118163]
+all_eps =     [1e-6, 1e-6, 1e-6,  1e-6,   1e-6,    1e-6,    1e-9,       1e-9,       1e-9,        1e-12,          1e-12,          1e-12]
+# all_fps =     [100_000]
+# all_nframes = [1000]
+# all_tstart =  [0.03000004160118163]
+# all_eps =     [1e-6]
 # reconstruction grid sizes
 Ny = 91
 Nx = 138
@@ -38,7 +38,7 @@ ft_range_max = 10000
 xx = np.linspace(0, 1, Nx, endpoint=False)
 yy = np.linspace(0, 1, Ny, endpoint=False)
 
-output_parent = config.OUTPUT_DIR / Path("results/async-spad/AC_fan/spadfan-thin0.033-freqharmx45x69-alpha0.00001")
+output_parent = config.OUTPUT_DIR / Path("results/async-spad/AC_fan/tmp/spadfan-thin0.033-freqharmx45x69-alpha0.00001")
 freqinfo_r = np.load(output_parent / "freqinfo-r.npz")
 F_r = freqinfo_r["F"]
 ft_r = freqinfo_r["ft"]
