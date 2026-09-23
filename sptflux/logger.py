@@ -6,8 +6,8 @@ import warnings
 
 from sptflux.config import LOG_DIR
 
-log_dir = Path(LOG_DIR)
-if not log_dir.is_dir():
+log_dir = Path(LOG_DIR) if LOG_DIR is not None else None
+if log_dir is not None and not log_dir.is_dir():
     try:
         log_dir.mkdir(parents=True)
     except Exception as e:
@@ -24,7 +24,7 @@ def get_logger(name) -> logging.Logger:
         logger.propagate = False
         logger.setLevel(logging.DEBUG)
         try:
-            if log_dir.is_dir():
+            if log_dir is not None and log_dir.is_dir():
                 add_file_handler(logger, log_dir / "all_logs.log")
         except Exception as e:
             print(f"Could not add file handler to logger {name}: {e}")

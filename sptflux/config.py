@@ -11,6 +11,11 @@ def load_path_config():
     project_dir = Path(__file__).parent.parent
     config_path = project_dir / "config" / "paths.yaml"
     default_config_path = project_dir / "config" / "default_paths.yaml"
+    if not default_config_path.is_file():
+        # installed as a package, so there is no config/ next to sptflux/:
+        # leave the paths unset instead of failing on import
+        warnings.warn(f"No path config found at {default_config_path}, so DATA_DIR, OUTPUT_DIR and LOG_DIR are None and logging to files is disabled.\nThis is expected when sptflux is installed as a package rather than run from the repository.")
+        return {}
     if not config_path.is_file():
         warnings.warn(f"Path config file not found: {config_path}, using default path config {default_config_path}\nMake sure to create your own config/paths.yaml for local paths.")
         config_path = default_config_path
@@ -31,6 +36,6 @@ def load_path_config():
 
 paths_config = load_path_config()
 
-DATA_DIR = paths_config["DATA_DIR"]
-OUTPUT_DIR = paths_config["OUTPUT_DIR"]
-LOG_DIR = paths_config["LOG_DIR"]
+DATA_DIR = paths_config.get("DATA_DIR")
+OUTPUT_DIR = paths_config.get("OUTPUT_DIR")
+LOG_DIR = paths_config.get("LOG_DIR")

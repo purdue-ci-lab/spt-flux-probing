@@ -2739,7 +2739,7 @@ wheels = [
 [[package]]
 name = "spadlib"
 version = "0.1.0"
-source = { git = "https://github.com/purdue-ci-lab/spadlib.git#fab63f5d05bcba44ab5e4bb3b92e8dea4c1dcd26" }
+source = { git = "https://github.com/purdue-ci-lab/spadlib.git#108c03aef09403dc5b834a7d5767b89efd827649" }
 dependencies = [
     { name = "dask", extra = ["array"] },
     { name = "h5py" },
@@ -2770,7 +2770,7 @@ wheels = [
 [[package]]
 name = "spt-flux-probing"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "dask" },
     { name = "dill" },
@@ -2781,6 +2781,7 @@ dependencies = [
     { name = "opencv-python" },
     { name = "pandas" },
     { name = "plotly" },
+    { name = "pyyaml" },
     { name = "scikit-image" },
     { name = "scikit-learn" },
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -2805,6 +2806,7 @@ requires-dist = [
     { name = "opencv-python", specifier = ">=4.13.0.92" },
     { name = "pandas", specifier = ">=3.0.3" },
     { name = "plotly", specifier = ">=6.8.0" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "scikit-image", specifier = ">=0.26.0" },
     { name = "scikit-learn", specifier = ">=1.9.0" },
     { name = "scipy", specifier = ">=1.17.1" },
