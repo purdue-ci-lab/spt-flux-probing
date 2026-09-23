@@ -16,11 +16,8 @@
   <h3 align="center">
     <p>ECCV 2026</p>
     <a href="https://jerukan.github.io/spt-flux-probing/" align="center">Project website</a>
-    <!-- ·
-    <a href="" align="center">Publication</a>
     ·
-    <a href="" align="center">Supplementary</a> -->
-    
+    <a href="https://arxiv.org/abs/2609.22479" align="center">Publication</a>
   </h3>
 </p>
 
