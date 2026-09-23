@@ -19,6 +19,7 @@ time axis only and leaves H and W full. ``null`` means no slice at all, which fo
 ``recon_slice`` is what triggers the ``config/recon_slices.yaml`` lookup -- write
 ``"::"`` for an explicitly full slice instead.
 """
+import os
 from pathlib import Path
 
 import yaml
@@ -27,6 +28,11 @@ _PROJECT_DIR = Path(__file__).parent.parent
 CONFIG_DIR = _PROJECT_DIR / "config"
 DATA_TYPES_DIR = CONFIG_DIR / "data_types"
 DEFAULT_RECON_SLICES = CONFIG_DIR / "recon_slices.yaml"
+
+WINDOWS_MAX_PATH = 260
+# longest relative path a run writes inside its output dir; zarr's metadata sits
+# deeper than its chunks (flux/c/0/0/0), so it sets the worst case
+LONGEST_OUTPUT_CHILD = "thinned_frames.zarr/framenums/zarr.json"
 
 
 def load_yaml(path):
@@ -95,6 +101,11 @@ def is_full_slice(dim_slice):
     return dim_slice.start is None and dim_slice.stop is None and dim_slice.step in (None, 1)
 
 
+def name_part(value):
+    """Format one value for an output directory name; ``None`` becomes empty."""
+    return "" if value is None else str(value)
+
+
 def hw_slice_name(txy_slice):
     """Name the H/W parts of a ``(T, H, W)`` slice; empty when they are full."""
     if txy_slice is None:
@@ -103,7 +114,7 @@ def hw_slice_name(txy_slice):
     for axis, s in zip(("y", "x"), txy_slice[1:]):
         if is_full_slice(s):
             continue
-        name += f"_{axis}{s.start}_{s.stop}"
+        name += f"_{axis}{name_part(s.start)}_{name_part(s.stop)}"
         if s.step is not None and s.step != 1:
             name += f"_{s.step}"
     return name
@@ -116,11 +127,44 @@ def frame_slice_name(txy_slice):
     t = txy_slice[0]
     name = ""
     if not is_full_slice(t):
-        name += f"{t.start}_{t.stop}"
+        name += f"{name_part(t.start)}_{name_part(t.stop)}"
         if t.step is not None and t.step != 1:
             name += f"_{t.step}"
     name += hw_slice_name(txy_slice)
     return f"frame{name}" if name else ""
+
+
+def _windows_long_paths_enabled():
+    """Whether Windows' ``LongPathsEnabled`` registry flag is turned on."""
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                            r"SYSTEM\CurrentControlSet\Control\FileSystem") as key:
+            return winreg.QueryValueEx(key, "LongPathsEnabled")[0] == 1
+    except OSError:
+        return False
+
+
+def long_path_warning(output_dir, longest_child=LONGEST_OUTPUT_CHILD):
+    """Warning text if a run's files would not fit Windows' MAX_PATH, else ``None``.
+
+    Only Windows has the limit, and only while long paths are disabled, so this is
+    ``None`` on other platforms and once the registry flag is set.
+    """
+    if os.name != "nt" or _windows_long_paths_enabled():
+        return None
+    longest = len(str(Path(output_dir).resolve() / longest_child))
+    if longest <= WINDOWS_MAX_PATH:
+        return None
+    return (
+        f"Output paths exceed the Windows {WINDOWS_MAX_PATH}-char limit: this run's "
+        f"longest file is {longest} chars ({output_dir / longest_child}). Writes will "
+        f"likely fail. Either enable long paths, in an admin PowerShell:\n"
+        f"    Set-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem' "
+        f"LongPathsEnabled 1 -Type DWord\n"
+        f"(then reboot), or shorten the path: a nearer OUTPUT_DIR, a shorter "
+        f"output_subdir in the run config, or shorter datanames."
+    )
 
 
 def load_recon_slices(path=DEFAULT_RECON_SLICES):

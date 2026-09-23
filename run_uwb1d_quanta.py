@@ -116,21 +116,28 @@ for dataname in all_datanames:
         recon_t_slice = recon_slice_vid[0] if recon_slice_vid is not None else None
         logger.info(f"Starting 1D UWB for {dataname} with keep_prob={keep_prob} and target_fps={target_fps}")
         playfps = int(round(Nt / T_exp))
-        alphastr = "None" if alpha_vid is None else f"{alpha_vid:.5f}"
+        alphastr = "" if alpha_vid is None else f"{alpha_vid:.5f}"
         if recon_slice_vid is None:
             slicestr = "slicefull"
         else:
+            slicestr = (f"slice{run_config.name_part(recon_t_slice.start)}"
+                        f"_{run_config.name_part(recon_t_slice.stop)}")
             if recon_t_slice.step is not None and recon_t_slice.step != 1:
-                slicestr = f"slice{recon_t_slice.start}_{recon_t_slice.stop}_step{recon_t_slice.step}"
-            else:
-                slicestr = f"slice{recon_t_slice.start}_{recon_t_slice.stop}"
+                slicestr += f"_step{recon_t_slice.step}"
             slicestr += run_config.hw_slice_name(recon_slice_vid)
+        # dataname, keep_prob and playfps are already in the parent dirs, so they are
+        # left out here to keep the full path short enough for Windows' 260-char limit
         recon_str_format = "-".join(part for part in [
-            "uwb1d", f"{dataname}", framestr, slicestr,
-            f"bins{Nt}x{Ny}x{Nx}", f"keep{keep_prob:.3f}", f"playfps{playfps}",
-            f"alpha{alphastr}"
+            "uwb1d", framestr, slicestr, f"bins{Nt}x{Ny}x{Nx}", f"alpha{alphastr}"
         ] if part)
+        # the zip lands flat in ZIP_TRANSFER_DIR, so it keeps the full identifying name
+        zip_run_id = "-".join([
+            dataname, f"thin{keep_prob:.3f}", f"fps{playfps}", recon_str_format
+        ])
         output_dir: Path = output_parent_dir / dataname / f"thin{keep_prob:.3f}" / f"fps{playfps}" / recon_str_format
+        path_warning = run_config.long_path_warning(output_dir)
+        if path_warning:
+            logger.warning(path_warning)
         output_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Output directory: {output_dir}")
         if keep_prob < 1.0:
@@ -183,6 +190,15 @@ for dataname in all_datanames:
             # (t, y, x) colon strings, as written in the run configs
             "frame_slice": run_config.slice_strs(frame_slice),
             "recon_slice": run_config.slice_strs(recon_slice_vid),
+            # the settings the run dir name no longer spells out: the configs
+            # verbatim plus the values resolved for this iteration
+            "run_config": run,
+            "data_type": data_type,
+            "run_config_path": str(args.run),
+            "recon_slices_path": str(args.recon_slices),
+            "recon_shape": [Nt, Ny, Nx],
+            "src_fps": fps_vid,
+            "playback_fps": playfps,
         }
         print("calculating flux statistics")
         print(f"flux dtype: {flux.dtype}, max value: {np.max(flux)}, min value: {np.min(flux)}, mean value: {np.mean(flux)}")
@@ -234,7 +250,7 @@ for dataname in all_datanames:
 
         if args.zip:
             zipoutpath = utils.zip_run(
-                output_dir, ZIP_TRANSFER_DIR, run_id=recon_str_format, append_time=False
+                output_dir, ZIP_TRANSFER_DIR, run_id=zip_run_id, append_time=False
             )
             logger.info(f"Zipped results to {zipoutpath}")
 
