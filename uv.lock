@@ -2739,7 +2739,7 @@ wheels = [
 [[package]]
 name = "spadlib"
 version = "0.1.0"
-source = { git = "https://github.com/purdue-ci-lab/spadlib.git#108c03aef09403dc5b834a7d5767b89efd827649" }
+source = { git = "https://github.com/purdue-ci-lab/spadlib.git#50139f3d0bbe4b977251814fec0aa14a507dd7c5" }
 dependencies = [
     { name = "dask", extra = ["array"] },
     { name = "h5py" },
