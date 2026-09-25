@@ -34,27 +34,23 @@ uv sync
 source .venv/bin/activate
 ```
 
-To set up CuPy for CUDA acceleration on processing quanta data, check your Nvidia version:
+#### CUDA acceleration (optional)
+
+CUDA acceleration uses CuPy for processing quanta data, cuFINUFFT for asynchronous timestamped data, and PyTorch for velocity-selective videography. All three are installed with the `cuda` extra:
+
+```shell
+uv sync --extra cuda
+```
+
+These are built for CUDA 12.x, and the CUDA libraries they need are installed from pip, so a system CUDA Toolkit is not required. Your Nvidia driver must support CUDA 12.6 or newer, which you can check with the "CUDA Version" shown in the top right of:
 
 ```shell
 nvidia-smi
 ```
 
-Depending on the version, install based on the following:
+(This is the newest CUDA version your driver supports, not the version of any installed CUDA Toolkit, which `nvcc --version` shows instead. A driver that supports CUDA 13.x can still run these CUDA 12.x packages.)
 
-```shell
-# For CUDA 12.x
-uv pip install cupy-cuda12x
-
-# For CUDA 13.x
-uv pip install cupy-cuda13x
-```
-
-If CUDA Toolkit is not installed on the system, append either of the above with `[ctk]`, e.g.
-
-```shell
-uv pip install "cupy-cuda12x[ctk]"
-```
+**Note**: A later `uv sync` without `--extra cuda` will uninstall these packages again.
 
 ### Project paths config
 
@@ -134,11 +130,7 @@ By default, this will only output `gamma.mp4` (reconstruction with a gamma corre
 
 ### Asynchronous SPAD and ultra-wideband videography
 
-**Note**: For GPU acceleration of asynchronous timestamped data, install cuFINUFFT.
-
-```shell
-uv pip install cufinufft
-```
+**Note**: GPU acceleration of asynchronous timestamped data requires cuFINUFFT, which is installed with the `cuda` extra (see [CUDA acceleration](#cuda-acceleration-optional)).
 
 Since timestamping SPAD arrays record picosecond-resolution timestamps and not frames, we treat their data as a 3D point cloud of continuous-position photons instead.
 
@@ -161,11 +153,11 @@ uv run uwbfan_recon.py
 
 ### Velocity-selective videography
 
-**IMPORTANT NOTE**: Velocity-selective videography requires PyTorch.
-Since PyTorch plays poorly with the FINUFFT library on MacBooks, we prefer to install torch separately:
+**IMPORTANT NOTE**: Velocity-selective videography requires PyTorch, which is installed with the `cuda` extra (see [CUDA acceleration](#cuda-acceleration-optional)).
+PyTorch is not part of the default environment since it plays poorly with the FINUFFT library on MacBooks. To run these scripts on a machine without an Nvidia GPU, add torch to a single run instead, e.g.
 
 ```shell
-uv pip install torch torchvision --index-url https://download.pytorch.org/whl/replace_with_cu_version
+uv run --with torch detect_motion.py --config motion_compensation_runs/compensate_guitar.yaml -v
 ```
 
 For scenes with multiple objects moving at different constant velocities (e.g. a plucked guitar string, a fired bullet), simply summing photons over a long exposure smears everything into motion blur. Since a rigidly-translating object's power in the 3D spatiotemporal Fourier transform `F(ft, fy, fx)` of the quanta video lies on a tilted plane (`ft + vx*fx + vy*fy ≈ 0`), we can probe for a velocity `(vx, vy)` by measuring energy along that plane, and reconstruct a sharp, motion-compensated image/video for a specific velocity by deshearing the spectrum before taking the temporal DC slice. This lets us isolate and bring into focus only the content moving at a chosen velocity, while unrelated motion is blurred out.

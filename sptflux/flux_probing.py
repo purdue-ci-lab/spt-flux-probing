@@ -12,6 +12,16 @@ try:
 except ImportError:
     warnings.warn("CuPy not available. GPU acceleration will not work for quanta data. Install CuPy for GPU support.")
 try:
+    # cufinufft doesn't search for pip-installed CUDA libs (pulled in by torch
+    # in the cuda extra), so preload them. this must come before trying cufinufft
+    # alone: it would pick up an older system cudart (e.g. module load cuda/12.3)
+    # that torch's own libraries then fail to link against
+    from cuda.pathfinder import load_nvidia_dynamic_lib
+    load_nvidia_dynamic_lib("cudart")
+    load_nvidia_dynamic_lib("cufft")
+except Exception:
+    pass
+try:
     import cufinufft
 except ImportError:
     warnings.warn("cufinufft not available. GPU acceleration will not work for continuous data. Install cufinufft for GPU support.")

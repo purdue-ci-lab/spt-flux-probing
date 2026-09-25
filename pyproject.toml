@@ -27,8 +27,22 @@ dependencies = [
     "zarr>=3.1.6",
 ]
 
+[project.optional-dependencies]
+cuda = [
+    "cufinufft>=2.5.1",
+    "cupy-cuda12x>=14.2.0",
+    "torch>=2.14.0",
+]
+
 [tool.uv.sources]
 spadlib = { git = "https://github.com/purdue-ci-lab/spadlib.git" }
+# the PyPI torch wheel is CUDA 13 on linux and CPU-only on windows
+torch = { index = "pytorch-cu126", extra = "cuda" }
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
 
 [build-system]
 requires = ["setuptools>=64"]
