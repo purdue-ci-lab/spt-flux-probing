@@ -1,0 +1,25 @@
+experiment_name: 28feb_0000_dark_bullet
+
+data:
+  path: data/Feb28_balloonBounce_acq0_2221ppps.zarr
+  T_exp: 1.0
+  type: zarr
+  frames: 100000
+  width: 512
+  height: 512
+  slice: [23300,24800]
+  velocity_bounds: [-0.05, 0.05, 300]
+
+window_settings:
+    patch_num: 0
+    window_size: 512
+    window_stride: 32
+    temporal_size: 500
+
+output:
+  base_path: ./output/Feb28_balloonbounce_acq0_2221ppps_dark_bullet/
+  sub_folder: "slice_{slice_start}_{slice_end}_width_{width}_height_{height}_velocity_bounds_{vmin}_{vmax}_N{n_vel}_window_size_{window_size}_window_stride_{window_stride}_temporal_size_{temporal_size}_patch_num_{patch_num}"
+  bin_video_path: "Feb28_balloonbounce_acq0_2221ppps.mp4"
+  two_dimensional_energies_path: "Feb28_balloonbounce_acq0_2221ppps.svg"
+  two_dimensional_detections_path: "Feb28_balloonbounce_acq0_2221ppps_detections.svg"
+  two_dimensional_motion_compensated_path: "Feb28_balloonbounce_acq0_2221ppps_motion_compensated.svg"

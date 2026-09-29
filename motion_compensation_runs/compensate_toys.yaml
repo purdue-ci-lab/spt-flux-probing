@@ -7,13 +7,13 @@ data:
   frames: 130000
   width: 512
   height: 256
-  slice: [28500, 30550]
-  velocity_bounds: [-0.03, 0.0, 100]
+  slice: [25000, 29000]
+  velocity_bounds: [-0.03, 0.0, 300]
 
 window_settings:
-    patch_num: 0
+    patch_num: 1
     window_size: 256
-    window_stride: 32
+    window_stride: 256
     temporal_size: 2000
 
 output:
