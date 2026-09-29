@@ -1,0 +1,25 @@
+experiment_name: bright_balloon_double_bullet_teaser
+
+data:
+  path: ./data/teaser_balloonbounce_bright.zarr
+  T_exp: 1.0
+  type: zarr
+  frames: 100000
+  width: 512
+  height: 512
+  slice: [50000,55000]
+  velocity_bounds: [0, 0.01, 200]
+
+window_settings:
+    patch_num: 0
+    window_size: 512
+    window_stride: 32
+    temporal_size: -1
+
+output:
+  base_path: ./output/bright_balloon_double_gun_teaser/
+  sub_folder: "slice_{slice_start}_{slice_end}_width_{width}_height_{height}_velocity_bounds_{vmin}_{vmax}_N{n_vel}_window_size_{window_size}_window_stride_{window_stride}_temporal_size_{temporal_size}_patch_num_{patch_num}"
+  bin_video_path: "bright_balloon_double_gun_teaser.mp4"
+  two_dimensional_energies_path: "bright_balloon_double_gun_teaser_2d_energies.svg"
+  two_dimensional_detections_path: "bright_balloon_double_gun_teaser_2d_detections.svg"
+  two_dimensional_motion_compensated_path: "bright_balloon_double_gun_teaser_2d_motion_compensated.svg"

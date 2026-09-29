@@ -7,7 +7,7 @@ data:
   frames: 130000
   width: 512
   height: 256
-  slice: [25000, 29000]
+  slice: [28500, 30550]
   velocity_bounds: [-0.03, 0.0, 100]
 
 window_settings:

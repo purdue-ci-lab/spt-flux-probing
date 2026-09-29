@@ -1,0 +1,25 @@
+experiment_name: teaser-gunballoon-dark-acq00002
+
+data:
+  path: ./data/teaser-gunballoon-dark-acq00002.zarr/
+  T_exp: 1.0
+  type: zarr
+  frames: 100000
+  width: 512
+  height: 512
+  slice: [86000, 87000]
+  velocity_bounds: [-0.2, 0.2, 50]
+
+window_settings:
+    patch_num: 0
+    window_size: 512
+    window_stride: 32
+    temporal_size: -1
+
+output:
+  base_path: ./output/teaser-gunballoon-dark-acq00002/
+  sub_folder: "slice_{slice_start}_{slice_end}_width_{width}_height_{height}_velocity_bounds_{vmin}_{vmax}_N{n_vel}_window_size_{window_size}_window_stride_{window_stride}_temporal_size_{temporal_size}_patch_num_{patch_num}"
+  bin_video_path: "teaser-gunballoon-dark-acq00002.mp4"
+  two_dimensional_energies_path: "teaser-gunballoon-dark-acq00002_2d_energies.svg"
+  two_dimensional_detections_path: "teaser-gunballoon-dark-acq00002_2d_detections.svg"
+  two_dimensional_motion_compensated_path: "teaser-gunballoon-dark-acq00002_2d_motion_compensated"
