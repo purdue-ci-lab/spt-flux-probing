@@ -172,6 +172,7 @@ def main():
         detection_cuts = ((cuts_raw[0], cuts_raw[1]), (cuts_raw[2], cuts_raw[3]))
         log.warning("Using detection cuts: vx in %s, vy in %s", detection_cuts[0], detection_cuts[1])
     else:
+        detection_cuts = None
         log.warning("No detection cuts provided; showing full bounds.")
     thinning_factor = args.thin
     T_exp = cfg["data"]["T_exp"]
@@ -292,7 +293,7 @@ def main():
 
     if not os.path.exists(output_bin_video_path):
         log.info("Saving binary patch video -> %s", output_bin_video_path)
-        write_video(analyzed_spadbinframes, output_bin_video_path, 1, 30, "gray", "mp4")
+        write_video(analyzed_spadbinframes, output_bin_video_path, gamma=1, playback_fps=30, cmap="gray", fileformat="mp4")
     else:
         log.info("Video already exists: %s", output_bin_video_path)
 
