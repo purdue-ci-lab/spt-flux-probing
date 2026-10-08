@@ -1,5 +1,7 @@
-data
-output
+data/*
+!data/.gitkeep
+output/*
+!output/.gitkeep
 logs
 *.log
 outputs
