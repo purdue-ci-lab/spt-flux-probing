@@ -73,7 +73,7 @@ DATA_DIR: ''
 OUTPUT_DIR: ''
 ```
 
-### Sample data download
+## Data download
 
 Download the data from Dropbox [here](https://www.dropbox.com/scl/fo/jwm9bcgbc87e8xib4koyd/AIk2M1QYeYToMTx_bqond5A?rlkey=a590dszivimivn9sb0z6zh08s&st=ab7e8w2f&dl=0).
 
