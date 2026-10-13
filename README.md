@@ -119,7 +119,7 @@ options:
 An example usage is the following:
 
 ```shell
-uv run run_uwb3d_quanta.py --run example_quanta.yaml --device 0 --cuda --no-vram-frames --no-vram-output
+uv run run_uwb3d_quanta.py --run config/runs/example_quanta.yaml --device 0 --cuda --no-vram-frames --no-vram-output
 ```
 
 If you have enough VRAM on your GPU, exclude the arguments `--no-vram-frames` or `--no-vram-output`, and the code will run significantly faster.
