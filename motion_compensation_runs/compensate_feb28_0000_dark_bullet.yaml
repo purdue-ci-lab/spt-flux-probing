@@ -8,7 +8,7 @@ data:
   width: 512
   height: 512
   slice: [23300,24800]
-  velocity_bounds: [-0.05, 0.05, 300]
+  velocity_bounds: [-0.05, 0.3, 300]
 
 window_settings:
     patch_num: 0

@@ -1,4 +1,4 @@
-experiment_name: 28feb_0000
+experiment_name: 28feb_0000_logo
 
 data:
   path: data/Feb28_balloonBounce_acq0_2221ppps.zarr
@@ -7,8 +7,8 @@ data:
   frames: 100000
   width: 512
   height: 512
-  slice: [45000,52000]
-  velocity_bounds: [-0.05, 0.05, 300]
+  slice: [45000,50000]
+  velocity_bounds: [-0.01, 0.01, 300]
 
 window_settings:
     patch_num: 0
