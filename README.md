@@ -182,10 +182,10 @@ Useful flags: `-t/--thin` to subsample photon arrivals before analysis, `-d/--de
 
 **2. Render a velocity-selective video** ([`motion_compensate_video.py`](motion_compensate_video.py))
 
-Once you know a velocity of interest (from step 1, or by hand), this slides a temporal window across the full sequence and motion-compensates each window at that fixed `(vx, vy)`, writing out a stabilized `.mp4` where content moving at that velocity stays sharp:
+Once you know a velocity of interest (from step 1, or by hand), this slides a temporal window across the full `slice` and motion-compensates each window at that fixed `(vx, vy)`, writing out a stabilized `.mp4` where content moving at that velocity stays sharp. The configs store the *detection* range in `slice`, so before rendering, set `slice` to the (usually larger) rendering range, e.g. `[45000, 55000]` for the logo (see [Detection window vs. rendering window](#detection-window-vs-rendering-window)):
 
 ```shell
-uv run motion_compensate_video.py --config motion_compensation_runs/compensate_feb28_0000_logo.yaml --vx 0.0012 --vy 0.0065 --window 5000 --skip 20 --fps_out 30
+uv run motion_compensate_video.py --config motion_compensation_runs/compensate_feb28_0000_logo.yaml --vx -0.0012 --vy 0.0065 --window 5000 --skip 20 --fps_out 30
 ```
 
 - `--window` overrides the config's `temporal_size` (frames per compensated output frame).
@@ -194,7 +194,63 @@ uv run motion_compensate_video.py --config motion_compensation_runs/compensate_f
 
 Both scripts use CUDA via torch when available (tiled to limit VRAM use) and fall back to a NumPy CPU path otherwise.
 
-**Configuration**: Run configs live in [`motion_compensation_runs/`](motion_compensation_runs) (e.g. `compensate_feb28_0000_logo.yaml`, `compensate_gun.yaml`, `compensate_baloon_bullet.yaml`). Each config specifies `data` (path, type, `T_exp`, frame count, resolution, frame `slice`, and `velocity_bounds: [vmin, vmax, n]` in px/frame), `window_settings` (spatial `window_size`/`window_stride` and `temporal_size` for patch extraction, plus which `patch_num` to analyze), and `output` (base path and filename templates).
+#### Configuration parameters
+
+Run configs live in [`motion_compensation_runs/`](motion_compensation_runs) (e.g. `compensate_feb28_0000_logo.yaml`, `compensate_toys.yaml`). Each config has three sections.
+
+`data`:
+
+| Param | Meaning |
+|---|---|
+| `path`, `type` | Video source. `type: zarr` reads a quanta zarr, anything else reads a raw `.bin` |
+| `frames`, `T_exp` | Total number of frames in the recording and its total exposure in seconds. The framerate is `frames / T_exp` |
+| `width`, `height` | Sensor resolution in pixels |
+| `slice: [start, end]` | Range of frames loaded from the recording. In detection, this range is split into windows (below). In rendering, it is the full range the sliding window moves over |
+| `velocity_bounds: [vmin, vmax, n]` | Candidate velocities in px/frame, `np.linspace(vmin, vmax, n)`. The **same** grid is used for both `vx` and `vy`, so the search covers an `n × n` square on `[vmin, vmax]²` with step `(vmax - vmin) / (n - 1)`. Bounds must contain the velocities you expect, and a narrower range gives a finer step for the same `n` |
+
+`window_settings` (used by detection; rendering only reads `temporal_size`, as the default for `--window`):
+
+| Param | Meaning |
+|---|---|
+| `temporal_size` | Detection window length in frames. `slice` is cut into **non-overlapping** temporal blocks of this length |
+| `window_size`, `window_stride` | Size and stride (in pixels) of the spatial patches taken from each temporal block. A window larger than the frame is clamped to the frame size |
+| `patch_num` | Which patch to analyze, indexing the flat list ordered by time block first, then `y`, then `x`. With a 512 window on a 512×512 frame there is one spatial patch per block, so `patch_num: k` selects the frames `[start + k·temporal_size, start + (k+1)·temporal_size)`. In `compensate_toys.yaml` (256 window/stride on a 512×256 frame) there are two patches per block, so `patch_num: 1` is the first time block, right half of the frame |
+
+`output`: `base_path` and file name templates. `sub_folder` can use `{slice_start}`, `{slice_end}`, `{width}`, `{height}`, `{vmin}`, `{vmax}`, `{n_vel}`, `{window_size}`, `{window_stride}`, `{temporal_size}` and `{patch_num}`.
+
+Thinning (`-t`) can be applied to either phase, with different effects. In detection, fewer photons make the velocity planes noisier and detection harder. In rendering, fewer photons per window produce lower-quality frames.
+
+#### Detection window vs. rendering window
+
+The two phases both use a temporal "window", but it plays a different role in each.
+
+**Detection window** (`temporal_size` in the YAML). This is the block of frames whose 3D FFT is searched for velocity planes. Choosing it is a tradeoff:
+- *Longer window*: more photons and more temporal frequency samples, so the energy on a velocity plane stands out more and the velocity is resolved more finely.
+- *Shorter window*: a long window also takes in more of everything else (other objects entering the scene, background motion, and the target itself speeding up or changing direction). That energy spreads over other planes, raising the noise floor and adding spurious detections.
+
+Pick the shortest window over which the object of interest moves at a roughly constant velocity and is reasonably isolated from other moving content.
+
+**Rendering range and window** (`slice` + `--window` + `--skip` in phase 2). Rendering does not search for anything; it reuses one known velocity. Here `slice` is a *reference range*, usually larger than the detection block, and the window slides over it. Each output frame is the motion-compensated image of `--window` consecutive input frames, and the window then advances by `--skip` frames. The number of output frames is
+
+```
+n_out = floor((slice_end - slice_start - window) / skip) + 1
+```
+
+For example, with a 100-frame rendering range, `--window 20` and `--skip 1`, the windows are `[0, 20)`, `[1, 21)`, …, `[80, 100)`, giving 81 compensated frames. `--window` sets how many photons (and how much motion blur from content at other velocities) go into each output frame, and `--skip` sets the temporal spacing between output frames. The rendering range can be much larger than the detection block, as long as the object keeps moving at the same velocity.
+
+#### Official settings
+
+These are the settings used to detect the velocities reported for each scene. The `Feb28_0000` objects correspond to `compensate_feb28_0000_{logo,white_bullet,dark_bullet,baloon}.yaml`, `Feb27_acq9` to `compensate_feb27_balls_acq9.yaml`, and `toys` to `compensate_toys.yaml`. "Render range" is the `slice` used for phase 2, "Detection block" is the frames analyzed in phase 1, and "Window" is the detection `temporal_size`, which is also the `--window` used for rendering.
+
+| Scene | Object | Render range | Detection block | Window | vx (px/frame) | vy (px/frame) | Thinning | FPS |
+|---|---|---|---|---|---|---|---|---|
+| Feb28_0000 | ECCV logo | 45000–55000 | 45000–50000 | 5000 | -0.0012 | +0.0065 | 1 | 100k |
+| Feb28_0000 | White bullet | 19800–21000 | 20400–20800 | 400 | +0.0760 | -0.0732 | 1 | 100k |
+| Feb28_0000 | Dark bullet | 23300–24800 | 23300–23800 | 500 | +0.2719 | 0 | 1 | 100k |
+| Feb28_0000 | Balloon | 21000–23250 | 21000–22000 | 1000 | +0.0109 | -0.0005 | 1 | 100k |
+| Feb27_acq9 | Balls | 70400–75400 | 70400–74400 | 4000 | -0.0005 | +0.0249 | 20 | 100k |
+| Feb27_acq9 | Balls | 70400–75400 | 70400–74400 | 4000 | -0.0002 | +0.0239 | 30 | 100k |
+| toys | Toys | 25000–29000 | 25000–27000 | 2000 | -0.0267 | 0 | 150 | 130k |
 
 ### Event camera videography
 
