@@ -27,6 +27,4 @@ hotpixel_correction: false
 # Slices are "start:stop" or "start:stop:step" strings; a ["t", "y", "x"] list
 # slices all three dimensions (e.g. ["0:1000", "100:400", ":"]). null = no slice.
 frame_slice: null                # null = use all source frames
-recon_slice: "::128"   # null = look up config/recon_slices.yaml, else default cap
-
-max_frames_recon_default: 2000   # cap when recon_slice is unset, to avoid huge outputs
+recon_slice: "::128"   # null = look up config/recon_slices.yaml

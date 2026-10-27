@@ -20,6 +20,4 @@ hotpixel_correction: false
 # Slices are "start:stop" or "start:stop:step" strings; a ["t", "y", "x"] list
 # slices all three dimensions (e.g. ["0:1000", "100:400", ":"]). null = no slice.
 frame_slice: null
-recon_slice: null                # look up config/recon_slices.yaml, else default cap
-
-max_frames_recon_default: 2000
+recon_slice: null                # look up config/recon_slices.yaml

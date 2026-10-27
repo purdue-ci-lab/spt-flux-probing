@@ -75,8 +75,9 @@ alpha = run["alpha"]
 hotpixel_correction = run["hotpixel_correction"]
 frame_slice = run_config.parse_slice(run["frame_slice"])
 framestr = run_config.frame_slice_name(frame_slice)  # "" when nothing is sliced
+# recon_slices.yaml indices are into the full data, so they are only valid when frame_slice keeps everything
+frames_full = frame_slice is None or all(run_config.is_full_slice(s) for s in frame_slice)
 recon_slice_run = run_config.parse_slice(run["recon_slice"])
-max_frames_recon_default = run["max_frames_recon_default"]  # avoid accidental 50+ GB outputs
 
 ZIP_TRANSFER_DIR = OUTPUT_DIR / "zipresults"
 
@@ -107,11 +108,14 @@ for dataname in all_datanames:
         Nt = int(nframes * target_fps / fps_vid)
         if recon_slice_run is not None:
             recon_slice_vid = recon_slice_run
-        elif (dataname, target_fps) in recon_slices:
+        elif (dataname, target_fps) in recon_slices and frames_full:
             recon_slice_vid = recon_slices[(dataname, target_fps)]
-        elif Nt > max_frames_recon_default:
-            recon_slice_vid = run_config.parse_slice(f"0:{max_frames_recon_default}")
         else:
+            if (dataname, target_fps) in recon_slices:
+                logger.warning(
+                    f"Skipping the recon_slices entry for ({dataname}, {target_fps}) since frame_slice "
+                    f"does not keep the full data; reconstructing the full (sliced) data instead"
+                )
             recon_slice_vid = None
         recon_t_slice = recon_slice_vid[0] if recon_slice_vid is not None else None
         logger.info(f"Starting 1D UWB for {dataname} with keep_prob={keep_prob} and target_fps={target_fps}")

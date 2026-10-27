@@ -32,5 +32,3 @@ window_settings:
   hop_t: null
   hop_h: 25
   hop_w: 25
-
-max_frames_recon_default: 10000
