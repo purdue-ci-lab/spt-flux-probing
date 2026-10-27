@@ -77,11 +77,12 @@ alpha = run["alpha"]
 hotpixel_correction = run["hotpixel_correction"]
 frame_slice = run_config.parse_slice(run["frame_slice"])
 framestr = run_config.frame_slice_name(frame_slice)  # "" when nothing is sliced
+# recon_slices.yaml indices are into the full data, so they are only valid when frame_slice keeps everything
+frames_full = frame_slice is None or all(run_config.is_full_slice(s) for s in frame_slice)
 recon_slice_run = run_config.parse_slice(run["recon_slice"])
 window = run["window"]
 window_kwargs = run["window_kwargs"]
 window_settings = run["window_settings"]
-max_frames_recon_default = run["max_frames_recon_default"]  # avoid accidental 50+ GB outputs
 
 ZIP_TRANSFER_DIR = OUTPUT_DIR / "zipresults"
 
@@ -116,17 +117,34 @@ for dataname in all_datanames:
     T_exp = nframes / fps_vid
     V = T_exp * binvidH * binvidW
 
+    # a chunk covering the whole axis is the same as no chunking, so use None (full size, no windowing).
+    # the hop is unused without chunking, so it is set to None as well
+    chunk_t_vid, chunk_h_vid, chunk_w_vid = chunk_t, chunk_h, chunk_w
+    hop_t_vid, hop_h_vid, hop_w_vid = hop_t, hop_h, hop_w
+    if chunk_t_vid is not None and chunk_t_vid >= binvidT:
+        logger.warning(f"chunk_t={chunk_t_vid} >= data length {binvidT} for {dataname}; setting chunk_t and hop_t to None")
+        chunk_t_vid, hop_t_vid = None, None
+    if chunk_h_vid is not None and chunk_h_vid >= binvidH:
+        logger.warning(f"chunk_h={chunk_h_vid} >= data height {binvidH} for {dataname}; setting chunk_h and hop_h to None")
+        chunk_h_vid, hop_h_vid = None, None
+    if chunk_w_vid is not None and chunk_w_vid >= binvidW:
+        logger.warning(f"chunk_w={chunk_w_vid} >= data width {binvidW} for {dataname}; setting chunk_w and hop_w to None")
+        chunk_w_vid, hop_w_vid = None, None
+
     for keep_prob, target_fps in itertools.product(all_keepprobs, all_target_fps):
         alpha_vid = alpha
         Nt = int(nframes * target_fps / fps_vid)
         recon_shape = (Nt, Ny, Nx)
         if recon_slice_run is not None:
             recon_slice_vid = recon_slice_run
-        elif (dataname, target_fps) in recon_slices:
+        elif (dataname, target_fps) in recon_slices and frames_full:
             recon_slice_vid = recon_slices[(dataname, target_fps)]
-        elif Nt > max_frames_recon_default:
-            recon_slice_vid = run_config.parse_slice(f"0:{max_frames_recon_default}")
         else:
+            if (dataname, target_fps) in recon_slices:
+                logger.warning(
+                    f"Skipping the recon_slices entry for ({dataname}, {target_fps}) since frame_slice "
+                    f"does not keep the full data; reconstructing the full (sliced) data instead"
+                )
             recon_slice_vid = None
         logger.info(f"Starting STFT for {dataname} with keep_prob={keep_prob} and target_fps={target_fps}")
         playfps = int(round(Nt / T_exp))
@@ -144,8 +162,8 @@ for dataname in all_datanames:
         # left out here in an attempt to keep the full path short enough for Windows' 260-char limit
         recon_str_format = "-".join(part for part in [
             framestr, slicestr,
-            f"chunks{run_config.name_part(chunk_t)}x{run_config.name_part(chunk_h)}x{run_config.name_part(chunk_w)}",
-            f"hops{run_config.name_part(hop_t)}x{run_config.name_part(hop_h)}x{run_config.name_part(hop_w)}",
+            f"chunks{run_config.name_part(chunk_t_vid)}x{run_config.name_part(chunk_h_vid)}x{run_config.name_part(chunk_w_vid)}",
+            f"hops{run_config.name_part(hop_t_vid)}x{run_config.name_part(hop_h_vid)}x{run_config.name_part(hop_w_vid)}",
             f"bins{Nt}x{Ny}x{Nx}", f"window_{window}", f"alpha{alphastr}"
         ] if part)
         # the zip lands flat in ZIP_TRANSFER_DIR, so it keeps the full identifying name
@@ -179,8 +197,8 @@ for dataname in all_datanames:
         t0 = time.time()
         flux = flux_probing.uwb3d_stft_quanta(
             quantaframes,
-            patch_sizes=(chunk_t, chunk_h, chunk_w),
-            hop_sizes=(hop_t, hop_h, hop_w),
+            patch_sizes=(chunk_t_vid, chunk_h_vid, chunk_w_vid),
+            hop_sizes=(hop_t_vid, hop_h_vid, hop_w_vid),
             window=window, window_kwargs=window_kwargs,
             recon_shape=recon_shape, recon_slice=recon_slice_vid,
             filter_func=None,
@@ -226,8 +244,8 @@ for dataname in all_datanames:
             "recon_slices_path": str(args.recon_slices),
             "recon_shape": list(recon_shape),
             "window_kwargs": window_kwargs,
-            "chunk_sizes": [chunk_t, chunk_h, chunk_w],
-            "hop_sizes": [hop_t, hop_h, hop_w],
+            "chunk_sizes": [chunk_t_vid, chunk_h_vid, chunk_w_vid],
+            "hop_sizes": [hop_t_vid, hop_h_vid, hop_w_vid],
             "src_fps": fps_vid,
             "playback_fps": playfps,
         }

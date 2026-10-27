@@ -17,7 +17,8 @@ strings, one per ``(T, H, W)`` dimension, with empty fields meaning "open", e.g.
 ``["0:1000", "100:400", "::2"]``. A bare string (or a 1-element list) slices the
 time axis only and leaves H and W full. ``null`` means no slice at all, which for
 ``recon_slice`` is what triggers the ``config/recon_slices.yaml`` lookup -- write
-``"::"`` for an explicitly full slice instead.
+``"::"`` for an explicitly full slice instead. The lookup is skipped when
+``frame_slice`` crops or strides the data, since its indices are into the full data.
 """
 import os
 from pathlib import Path
