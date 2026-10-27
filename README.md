@@ -79,6 +79,18 @@ Download the data from Dropbox [here](https://www.dropbox.com/scl/fo/jwm9bcgbc87
 
 Put them in your `DATA_DIR`.
 
+Folder structure should resemble the following:
+
+```
+DATA_DIR (data/ by default)/
+├─ quanta/
+│  ├─ individual-data/
+├─ async-spad/
+├─ spike/
+├─ quanta-megapix/
+├─ etc.../
+```
+
 **Note**: Any quanta data stored as a `.zarr` format has already been hot-pixel corrected. There may still be some weaker hot pixels still visible, but they should not be able to ruin dynamic range.
 
 ## Running the code
