@@ -38,7 +38,7 @@ ft_range_max = 10000
 xx = np.linspace(0, 1, Nx, endpoint=False)
 yy = np.linspace(0, 1, Ny, endpoint=False)
 
-output_parent = config.OUTPUT_DIR / Path("results/async-spad/AC_fan/spadfan-thin0.033-freqharmx45x69-alpha0.00001")
+output_parent = config.OUTPUT_DIR / Path("results/async-spad/AC_fan/spadfan-thin1.000-freqharmx45x69-alpha0.00001")
 freqinfo_r = np.load(output_parent / "freqinfo-r.npz")
 F_r = freqinfo_r["F"]
 ft_r = freqinfo_r["ft"]
@@ -77,6 +77,7 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
     nyquist = (fps / 2) / (1 / T_exp)
 
     # red
+    t0 = time.time()
     mask = ft_r <= nyquist
     F_r_dbl = flux_probing.double_real_spectrum_3d(F_r, ft_r, nyquist=nyquist)
     out = flux_probing.spt_ihpp_inufft3_chunked(
@@ -84,6 +85,8 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
         coordgrid,
         chunk_size=chunk_size, ft_range_max=ft_range_max, cuda=cuda, eps=eps
     )
+    t1 = time.time()
+    logger.info(f"3D NUFFT for red channel reconstruction time: {t1 - t0:.2f} seconds")
     flux_r = np.clip(out.real, 0, None)
     flux_r3ch = np.zeros((Nt, Ny, Nx, 3), dtype=np.float64)
     flux_r3ch[:, :, :, 0] = flux_r
@@ -91,6 +94,7 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
     del flux_r3ch
 
     # green
+    t0 = time.time()
     mask = ft_g <= nyquist
     F_g_dbl = flux_probing.double_real_spectrum_3d(F_g, ft_g, nyquist=nyquist)
     out = flux_probing.spt_ihpp_inufft3_chunked(
@@ -98,6 +102,8 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
         coordgrid,
         chunk_size=chunk_size, ft_range_max=ft_range_max, cuda=cuda, eps=eps
     )
+    t1 = time.time()
+    logger.info(f"3D NUFFT for green channel reconstruction time: {t1 - t0:.2f} seconds")
     flux_g = np.clip(out.real, 0, None)
     flux_g3ch = np.zeros((Nt, Ny, Nx, 3), dtype=np.float64)
     flux_g3ch[:, :, :, 1] = flux_g
@@ -105,6 +111,7 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
     del flux_g3ch
 
     # blue
+    t0 = time.time()
     mask = ft_b <= nyquist
     F_b_dbl = flux_probing.double_real_spectrum_3d(F_b, ft_b, nyquist=nyquist)
     out = flux_probing.spt_ihpp_inufft3_chunked(
@@ -112,6 +119,8 @@ for fps, nframes, tstart, eps in zip(all_fps, all_nframes, all_tstart, all_eps):
         coordgrid,
         chunk_size=chunk_size, ft_range_max=ft_range_max, cuda=cuda, eps=eps
     )
+    t1 = time.time()
+    logger.info(f"3D NUFFT for blue channel reconstruction time: {t1 - t0:.2f} seconds")
     flux_b = np.clip(out.real, 0, None)
     flux_b3ch = np.zeros((Nt, Ny, Nx, 3), dtype=np.float64)
     flux_b3ch[:, :, :, 2] = flux_b

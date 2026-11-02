@@ -30,7 +30,7 @@ data_folder = config.DATA_DIR / "async-spad/AC_fan"
 
 alpha = 0.00001
 eps = 1e-12
-keep_prob = 1/30
+keep_prob = 1.0  # probability of keeping events (for thinning)
 ########## End variable setup ##########
 
 fx = np.arange(-fx_max, fx_max + step, step)
@@ -144,4 +144,4 @@ freqinfo_b = {
 np.savez_compressed(output_folder / f"freqinfo-b.npz", **freqinfo_b)
 
 t1 = time.time()
-logger.info(f"3D NUFFT for 3 channels reconstruction time: {t1 - t0:.2f} seconds")
+logger.info(f"3D NUFFT for 3 channels forward pass time: {t1 - t0:.2f} seconds")
