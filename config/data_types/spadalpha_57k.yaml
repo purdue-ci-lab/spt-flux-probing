@@ -3,5 +3,5 @@
 # Selected by name (this file's stem) from a run config's `data_type` key.
 src_H: 1024
 src_W: 1024
-src_fps: 56000        # native capture fps (null = read from file metadata)
+src_fps: 57000        # native capture fps (null = read from file metadata)
 data_subdir: quanta-megapix    # source location relative to config.DATA_DIR

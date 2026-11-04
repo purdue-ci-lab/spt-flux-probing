@@ -2,7 +2,7 @@
 #   python run_uwb3d_quanta.py --run config/runs/uwb3d_spadalpha.yaml
 
 # Name of a data-type config in config/data_types (without the .yaml extension).
-data_type: spadalpha_56k
+data_type: spadalpha_57k
 
 output_subdir: results/quanta-megapix    # output location relative to config.OUTPUT_DIR
 
