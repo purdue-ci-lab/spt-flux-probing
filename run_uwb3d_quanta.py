@@ -95,8 +95,9 @@ for dataname in all_datanames:
     quantapath = data_dir / f"{dataname}"
     # strip extension (handles .zarr, ignores dirs)
     dataname = utils.get_path_stem(quantapath)
+    t0 = time.time()
     quantaframes_base, metadata = spio.read_quanta_auto(
-        quantapath, load_data=True, H=src_H, W=src_W, return_meta=True
+        quantapath, load_data=False, H=src_H, W=src_W, return_meta=True
     )  # shape: (T, H, W)
     if metadata is not None:
         fps_vid = metadata.get("fps", src_fps)
@@ -106,6 +107,10 @@ for dataname in all_datanames:
         quantaframes_base = quantaframes_base[frame_slice]
         frameslice_tstep = frame_slice[0].step if frame_slice[0].step is not None else 1
         fps_vid = fps_vid // frameslice_tstep
+    else:
+        quantaframes_base = quantaframes_base[:]
+    t1 = time.time()
+    logger.info(f"Loaded {dataname} from {quantapath} in {t1 - t0:.2f} seconds; shape: {quantaframes_base.shape}, fps: {fps_vid}")
     if hotpixel_correction:
         logger.info(f"Correcting hot pixels for {dataname}")
         quantaframes_base = spproc.correct_hotpixels(quantaframes_base)

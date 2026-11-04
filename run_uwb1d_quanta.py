@@ -85,22 +85,30 @@ for dataname in all_datanames:
     quantapath = data_dir / f"{dataname}"
     # strip extension (handles .zarr, ignores dirs)
     dataname = utils.get_path_stem(quantapath)
+    t0 = time.time()
     quantaframes_base, metadata = spio.read_quanta_auto(
-        quantapath, load_data=True, H=src_H, W=src_W, return_meta=True
+        quantapath, load_data=False, H=src_H, W=src_W, return_meta=True
     )  # shape: (T, H, W)
-    if frame_slice is not None:
-        quantaframes_base = quantaframes_base[frame_slice]
-    if hotpixel_correction:
-        logger.info(f"Correcting hot pixels for {dataname}")
-        quantaframes_base = spproc.correct_hotpixels(quantaframes_base)
-    nframes = quantaframes_base.shape[0]
-    Ny, Nx = quantaframes_base.shape[1], quantaframes_base.shape[2]
-    binvidT, binvidH, binvidW = quantaframes_base.shape
-    nevents_orig = da.count_nonzero(quantaframes_base).compute()
     if metadata is not None:
         fps_vid = metadata.get("fps", src_fps)
     else:
         fps_vid = src_fps
+    if frame_slice is not None:
+        quantaframes_base = quantaframes_base[frame_slice]
+        frameslice_tstep = frame_slice[0].step if frame_slice[0].step is not None else 1
+        fps_vid = fps_vid // frameslice_tstep
+    else:
+        quantaframes_base = quantaframes_base[:]
+    t1 = time.time()
+    logger.info(f"Loaded {dataname} from {quantapath} in {t1 - t0:.2f} seconds; shape: {quantaframes_base.shape}, fps: {fps_vid}")
+    if hotpixel_correction:
+        logger.info(f"Correcting hot pixels for {dataname}")
+        quantaframes_base = spproc.correct_hotpixels(quantaframes_base)
+
+    nframes = quantaframes_base.shape[0]
+    Ny, Nx = quantaframes_base.shape[1], quantaframes_base.shape[2]
+    binvidT, binvidH, binvidW = quantaframes_base.shape
+    nevents_orig = da.count_nonzero(quantaframes_base).compute()
     T_exp = nframes / fps_vid
 
     for keep_prob, target_fps in itertools.product(all_keepprobs, all_target_fps):
