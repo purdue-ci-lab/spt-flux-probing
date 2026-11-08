@@ -7,11 +7,9 @@ data_type: spadalpha_57k
 output_subdir: results/quanta-megapix    # output location relative to config.OUTPUT_DIR
 
 datanames:
-  - acq00040-laser-close.zarr
-  # - acq00042-laser-far.zarr
-  # - acq00043-laser-far-less-exposure-per-frame.zarr
+  - paintball-moonlight-1-hotpixel_corrected.h5
 
-target_fps: [1000]
+target_fps: [10000]
 keep_probs: [1.0]
 alpha: 1.0e-4
 
@@ -20,16 +18,16 @@ hotpixel_correction: false
 
 # Slices are "start:stop" or "start:stop:step" strings; a ["t", "y", "x"] list
 # slices all three dimensions (e.g. ["0:1000", "100:400", ":"]). null = no slice.
-frame_slice: [":", ":", ":"]
+frame_slice: ["15000:30000", ":", ":"]
 recon_slice: null                # look up config/recon_slices.yaml
 
 window: hann
 window_kwargs: null
 
 window_settings:
-  chunk_t: 10000
+  chunk_t: 5000
   chunk_h: 100
   chunk_w: 100
-  hop_t: 250
+  hop_t: 1250
   hop_h: 25
   hop_w: 25

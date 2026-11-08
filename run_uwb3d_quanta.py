@@ -8,7 +8,7 @@ import numpy as np
 import zarr
 
 from sptflux import flux_probing, utils, run_config
-from spadlib import io as spio, processing as spproc, video_io as spvid
+from spadlib import io as spio, processing as spproc, video_io as spvid, utils as sputils
 from sptflux.logger import get_logger
 from sptflux.config import DATA_DIR, OUTPUT_DIR
 
@@ -267,10 +267,10 @@ for dataname in all_datanames:
             reconinfo,
             output_dir / f"reconinfo.zarr",
             chunks={
-                "flux": (400, Ny, Nx),
+                "flux": (sputils._frames_per_chunk(flux_to_save.shape[0], flux_to_save[0].nbytes, spio.MAX_CHUNK_BYTES), Ny, Nx),
             },
             attrs=metadata,
-            n_workers=48,
+            n_workers=4,
             overwrite=True,
         )
         spvid.write_video(

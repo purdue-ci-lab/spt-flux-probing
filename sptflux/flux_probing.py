@@ -1170,14 +1170,6 @@ def uwb3d_stft_quanta(
     except Exception as e:
         raise ImportError(f"CuPy not available even though cuda=True. Install CuPy for GPU acceleration, or set cuda=False.") from e
     T, H, W = frames.shape
-    # load it into memory, it won't fit in VRAM along with FFT intermediates
-    if np.all(frames < 256):
-        frames_dtype = "uint8"
-    elif np.all(frames < 65536):
-        frames_dtype = "uint16"
-    else:
-        frames_dtype = "uint32"
-    frames = np.asarray(frames, dtype=frames_dtype)
 
     do_reconstruct = recon_shape is not None
     if not do_reconstruct and use_recon_nyquist:
@@ -1421,7 +1413,6 @@ def uwb3d_stft_quanta(
 
         # extract raw binned chunk (should be contained within volume, so full patch size)
         spadchunk = frames_pad[t0:t0+patch_T, h0:h0+patch_H, w0:w0+patch_W]
-        spadchunk = xp.asarray(spadchunk, dtype=frames_dtype)
 
         if spadchunk.shape != (patch_T, patch_H, patch_W):
             raise ValueError(f"Chunk shape {spadchunk.shape} mismatch with patch size {(patch_T, patch_H, patch_W)}, something is wrong.")
@@ -1558,7 +1549,10 @@ def uwb3d_stft_quanta(
             out = out.get()
             wsum = wsum.get()
         # normalize by accumulated window weights (avoid divide-by-zero)
-        flux = np.clip(out, a_min=0.0, a_max=None) / (np.asarray(wsum, dtype="float32") + 1e-6)
+        np.clip(out, a_min=0.0, a_max=None, out=out)
+        wsum += 1e-6
+        out /= wsum
+        flux = out
         if save_fourier_coeffs:
             return F, flux
         return flux

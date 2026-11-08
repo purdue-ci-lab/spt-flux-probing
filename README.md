@@ -99,7 +99,7 @@ DATA_DIR (data/ by default)/
 
 Quanta data are data that is frame-based (i.e. one event takes one pixel, and frames are sampled at an even rate). This consists of both quanta SPAD sensors and neuromorphic spike cameras.
 
-**Supported data formats**: The primary format we use for data are `.zarr` files, since they are stored compressed and can be read lazily. Other supported file formats are the `.bin` files or directories of `.bin` files as outputted by default by Pi Imaging SPAD 512 or SPAD Alpha cameras. Alternatively, `.mat` formats as used in [Quanta Burst Photography](https://github.com/sizhuom/quanta-burst-photography) are also supported.
+**Supported data formats**: The primary format we use for data are HDF5 and Zarr files, since they are stored compressed and can be read lazily. Other supported file formats are the `.bin` files or directories of `.bin` files as outputted by default by Pi Imaging SPAD 512 or SPAD Alpha cameras. Alternatively, `.mat` formats as used in [Quanta Burst Photography](https://github.com/sizhuom/quanta-burst-photography) are also supported.
 
 **Data configuration**: Set up the data dimensions and framerate within `config/data_types`, where you can reference existing configurations for the SPAD 512 camera ([`config/data_types/spad512_100k.yaml`](config/data_types/spad512_100k.yaml)) and the spike camera ([`config/data_types/spike_40k.yaml`](config/data_types/spike_40k.yaml)).
 
